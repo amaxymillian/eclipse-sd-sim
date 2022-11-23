@@ -154,6 +154,12 @@ class Battle_sim:
         
         #for ship in self.sorted_ships:
         #    print(ship)
+
+    def ppships(self, player_num):
+        output_str = f'Player_{player_num} ships: '
+        for ship in eval(f"self.player_{player_num}_ships"):
+            output_str += str(ship)
+        return output_str
       
     def do_battle(self):
         
@@ -161,15 +167,17 @@ class Battle_sim:
         #If a ship is destroyed, remove it from the list (potentially before it fires)
         #Loop until all ships on one side or the other are defeated
         round = 1
+
+        print(f'*** Start of battle ***\n {self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
         
         #First fire missiles in initiative order
-        print('Begin Missiles')
+        #print('Begin Missiles')
         for ship in self.sorted_ships:
             pass
             #TODO IMPLEMENT
             
             
-        print('Missiles Complete!')
+        #print('Missiles Complete!')
         
         
         for i in range(1,100): #Assume no combat will take more than 100 rounds for now
@@ -189,6 +197,8 @@ class Battle_sim:
             else:
                 print('Combat complete..?')
                 break
+
+        print(f'*** End of battle ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
                 
             
             
