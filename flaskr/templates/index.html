@@ -11,6 +11,13 @@
   <header>
     <h1>Eclipse SD Sim</h1>>
   </header>
+
+  <form method="post" action="/index">
+
+    <input type="submit" value="add_ship" name="Add Ship"/>
+    <input type="submit" value="run_sim" name="Run Simulation!" />
+
+  </form>
   {% for message in get_flashed_messages() %}
     <div class="flash">{{ message }}</div>
   {% endfor %}

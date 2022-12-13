@@ -2,7 +2,9 @@
 import os
 
 from flask import Flask
-from flask import render_template
+from flask import render_template, request, flash
+
+from sim.eclipse_sd_sim import Ship, Battle_sim
 
 def create_app(test_config=None):
     # create and configure the app
@@ -33,6 +35,8 @@ def create_app(test_config=None):
     @app.route('/index', methods=('GET','POST'))
     def index():
         # Do Stuff
+        if request.method == 'POST':
+            flash('POST!')
 
         return render_template('index.html')
 
