@@ -17,18 +17,43 @@ class Ship_part_names(Enum):
     
     
 # Need a data structure to represent ship configurations
-ship_types = {Ship_type.INTERCEPTOR: 
-              {"slots":4, "base_initiative":2, 
-               "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE, None]}
-             }
+ship_types = {
+    Ship_type.INTERCEPTOR: 
+    {"slots":4, "base_initiative":2, 
+    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE, None]},
+    Ship_type.CRUISER: 
+    {"slots":6, "base_initiative":1, 
+    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
+    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL None]},
+    }
 
 # Need a data structure to represent the various tech tiles 
 ship_parts = {
-    Ship_part_names.ELECTRON_COMPUTER: {"type": "computer", "targeting": 1, "cost":0},
-    Ship_part_names.HULL: {"type":"hull", "armor":1, "cost":0},
-    Ship_part_names.ION_CANNON: {"type": "weapon", "damage": 1, "cost": 1},
-    Ship_part_names.NUCLEAR_DRIVE: {"type": "drive", "initiative": 2, "cost": 1},
-    Ship_part_names.NUCLEAR_SOURCE: {"type": "source", "power": 3}
+    Ship_part_names.ABSORPTION_SHIELD: {"type": "shield", "targeting": -1, "power": 4},
+    Ship_part_names.ANTIMATTER_CANNON: {"type": "cannon", "damage": 4, "power": -4},
+    Ship_part_names.CONIFOLD_FIELD: {"type":"hull", "armor":3, "power": -2},
+    Ship_part_names.ELECTRON_COMPUTER: {"type": "computer", "targeting": 1, "power": 0},
+    Ship_part_names.FLUX_MISSILE: {"type": "missile", "damage": 1, "times_fired": 2, "power": 0}, 
+    Ship_part_names.FUSION_DRIVE: {"type": "drive", "initiative": 2, "power": -2},
+    Ship_part_names.FUSION_SOURCE: {"type": "source", "power": 6},
+    Ship_part_names.GAUSS_SHIELD: {"type": "shield", "targeting": -1, "power": 0},
+    Ship_part_names.GLUON_COMPUTER: {"type": "computer", "targeting": 3, "power":-2},
+    Ship_part_names.HULL: {"type":"hull", "armor":1, "power":0},
+    Ship_part_names.IMPROVED_HULL: {"type":"hull", "armor":2, "power":0},
+    Ship_part_names.ION_CANNON: {"type": "cannon", "damage": 1, "power": -1},
+    Ship_part_names.NUCLEAR_DRIVE: {"type": "drive", "initiative": 1, "power": -1},
+    Ship_part_names.NUCLEAR_SOURCE: {"type": "source", "power": 3},
+    Ship_part_names.PHASE_SHIELD: {"type": "shield", "targeting": -2, "power": -1},
+    Ship_part_names.PLASMA_CANNON: {"type": "cannon", "damage": 2, "power": -2},
+    Ship_part_names.PLASMA_MISSILE: {"type": "missile", "damage": 2, "times_fired": 2, "power": -1}, 
+    Ship_part_names.POSITRON_COMPUTER: {"type": "computer", "targeting": 2, "power": -1},
+    Ship_part_names.RIFT_CANNON: {"type": "cannon", "damage": "RIFT_DAMAGE", "power": -2},
+    Ship_part_names.SENTIENT_HULL: {"type":"hull", "armor":1, "targeting": 1, "power":0},
+    Ship_part_names.SOLITON_CANNON: {"type": "cannon", "damage": 3, "power": -3},
+    Ship_part_names.TACHYON_DRIVE: {"type": "drive", "initiative": 3, "power": -3},
+    Ship_part_names.TACHYON_SOURCE: {"type": "source", "power": 9},
+    Ship_part_names.TRANSITION_DRIVE: {"type": "drive", "initiative": 0, "power": 0},
+    Ship_part_names.ZERO-POINT_SOURCE: {"type": "source", "power": 12}
 }
 # Need to be able to simulate the rolling of die, assigning of damage per
 # round
@@ -199,6 +224,8 @@ class Battle_sim:
                 break
 
         print(f'*** End of battle ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
+
+        # TODO - Return an array representing the outcome?
                 
             
             
