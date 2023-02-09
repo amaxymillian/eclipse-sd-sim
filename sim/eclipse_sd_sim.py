@@ -1,18 +1,38 @@
-from enum import Enum
+from enum import IntEnum
 import random
 
-class Ship_type(Enum):
+class Ship_type(IntEnum):
     INTERCEPTOR = 1
     CRUISER = 2
     DREADNOUGHT = 3
     STARBASE = 4
     
-class Ship_part_names(Enum):
-    ELECTRON_COMPUTER = 1
-    HULL = 2
-    ION_CANNON = 3
-    NUCLEAR_DRIVE = 4
-    NUCLEAR_SOURCE = 5
+class Ship_part_names(IntEnum):
+    ABSORPTION_SHIELD = 1
+    ANTIMATTER_CANNON = 2
+    CONIFOLD_FIELD = 3
+    ELECTRON_COMPUTER = 4
+    FLUX_MISSILE = 5
+    FUSION_DRIVE = 6
+    FUSION_SOURCE = 7
+    GAUSS_SHIELD = 8
+    GLUON_COMPUTER = 9
+    HULL = 10
+    IMPROVED_HULL = 11
+    ION_CANNON = 12
+    NUCLEAR_DRIVE = 13
+    NUCLEAR_SOURCE = 14
+    PHASE_SHIELD = 15
+    PLASMA_CANNON = 16
+    PLASMA_MISSILE = 17
+    POSITRON_COMPUTER = 18
+    RIFT_CANNON = 19
+    SENTIENT_HULL = 20
+    SOLITON_CANNON = 21
+    TACHYON_DRIVE = 22
+    TACHYON_SOURCE = 23
+    TRANSITION_DRIVE = 24
+    ZEROPOINT_SOURCE = 25
     
     
     
@@ -21,10 +41,21 @@ ship_types = {
     Ship_type.INTERCEPTOR: 
     {"slots":4, "base_initiative":2, 
     "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE, None]},
+    
     Ship_type.CRUISER: 
     {"slots":6, "base_initiative":1, 
     "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL None]},
+    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, None]},
+    
+    Ship_type.DREADNOUGHT: 
+    {"slots":8, "base_initiative":0, 
+    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
+    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, None]},
+
+    Ship_type.STARBASE: 
+    {"slots":5, "base_initiative":4, 
+    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, None]}
+
     }
 
 # Need a data structure to represent the various tech tiles 
@@ -53,11 +84,11 @@ ship_parts = {
     Ship_part_names.TACHYON_DRIVE: {"type": "drive", "initiative": 3, "power": -3},
     Ship_part_names.TACHYON_SOURCE: {"type": "source", "power": 9},
     Ship_part_names.TRANSITION_DRIVE: {"type": "drive", "initiative": 0, "power": 0},
-    Ship_part_names.ZERO-POINT_SOURCE: {"type": "source", "power": 12}
+    Ship_part_names.ZEROPOINT_SOURCE: {"type": "source", "power": 12}
 }
+
 # Need to be able to simulate the rolling of die, assigning of damage per
 # round
-
 class Ship:
 
     def __init__(self, Ship_type, player_num, is_attacker = True, ship_parts: list[str] = None):
@@ -280,8 +311,9 @@ class Battle_sim:
 
 def main():
     test_ship = Ship(Ship_type.INTERCEPTOR, 1, is_attacker = False)
+    test_ship_b = Ship(Ship_type.INTERCEPTOR, 1, is_attacker = False)
     #print(test_ship)
-    test_ship_2 = Ship(Ship_type.INTERCEPTOR, 2)
+    test_ship_2 = Ship(Ship_type.DREADNOUGHT, 2)
 
 
     test_ship_2.add_part(Ship_part_names.NUCLEAR_DRIVE, 3)
@@ -289,7 +321,7 @@ def main():
 
 
 
-    battle_sim = Battle_sim([test_ship], [test_ship_2])
+    battle_sim = Battle_sim([test_ship, test_ship_b], [test_ship_2])
 
     battle_sim.do_battle()
 
