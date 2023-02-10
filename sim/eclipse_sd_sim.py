@@ -1,5 +1,7 @@
-from enum import IntEnum
 import random
+import pandas as pd
+from enum import IntEnum
+from copy import deepcopy
 
 class Ship_type(IntEnum):
     INTERCEPTOR = 1
@@ -211,52 +213,79 @@ class Battle_sim:
         #for ship in self.sorted_ships:
         #    print(ship)
 
+        #Init results dataframe
+        self._df = pd.DataFrame(columns=['Result', 'Raw Count', 'Percentage'])
+        self._df = self._df.set_index('Result')
+
     def ppships(self, player_num):
-        output_str = f'Player_{player_num} ships: '
+        output_str = f'P{player_num} s: '
         for ship in eval(f"self.player_{player_num}_ships"):
             output_str += str(ship)
         return output_str
       
-    def do_battle(self):
+    def do_battle(self, sim_count = 1):
         
         #In init order roll attack die, assign damage based on AI model. 
         #If a ship is destroyed, remove it from the list (potentially before it fires)
-        #Loop until all ships on one side or the other are defeated
-        round = 1
+        #Loop until all ships on one side or the other are defeated.
+        #Run the sim for sim_count times and return a probability distribution of the outcomes encountered
 
-        print(f'*** Start of battle ***\n {self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
-        
-        #First fire missiles in initiative order
-        #print('Begin Missiles')
-        for ship in self.sorted_ships:
-            pass
-            #TODO IMPLEMENT
+        # Create backups of the ships to reset after each loop
+        player_1_ships_orig = deepcopy(self.player_1_ships)
+        player_2_ships_orig = deepcopy(self.player_2_ships)
+
+        for battle in range(sim_count):
+            round = 1
+
+            print(f'*** Start of battle {battle} ***\n {self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
             
-            
-        #print('Missiles Complete!')
-        
-        
-        for i in range(1,100): #Assume no combat will take more than 100 rounds for now
-            print(f'\n\nRound {i} begin...')
-            #Second fire all other weapons in initiative order
+            #First fire missiles in initiative order
+            #print('Begin Missiles')
             for ship in self.sorted_ships:
-                print(ship)
-                dmg = ship.fire_weapons()
-                print(dmg)
-                if dmg:
-                    self.assign_dmg(ship, dmg)
+                pass
+                #TODO IMPLEMENT
                 
-            #If both sides have living ships continue, otherwise end
-            #print(f'p1 ship count: {len(self.player_1_ships)} ... p2 ship count: {len(self.player_2_ships)}')
-            if len(self.player_1_ships) >= 1 and len(self.player_2_ships) >= 1:
-                round +=1
+                
+            #print('Missiles Complete!')
+            
+            
+            for i in range(1,100): #Assume no combat will take more than 100 rounds for now
+                print(f'\n\nRound {i} begin...')
+                #Second fire all other weapons in initiative order
+                for ship in self.sorted_ships:
+                    print(ship)
+                    dmg = ship.fire_weapons()
+                    print(dmg)
+                    if dmg:
+                        self.assign_dmg(ship, dmg)
+                    
+                #If both sides have living ships continue, otherwise end
+                #print(f'p1 ship count: {len(self.player_1_ships)} ... p2 ship count: {len(self.player_2_ships)}')
+                if len(self.player_1_ships) >= 1 and len(self.player_2_ships) >= 1:
+                    round +=1
+                else:
+                    print('Combat complete..?')
+                    break
+
+            print(f'*** End of battle ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
+
+            # TODO - Return a dataframe representing the outcome?
+            result_arr = f"{self.ppships(1)} <-> {self.ppships(2)}"
+            # print(f"self._df.loc['Result':]: {self._df.loc['Result':]}")
+            if result_arr in self._df.index:
+                self._df.loc[result_arr, 'Raw Count'] += 1
             else:
-                print('Combat complete..?')
-                break
+                new_row = pd.DataFrame([{'Result': result_arr, 'Raw Count': 1, 'Percentage': 0}])
+                new_row = new_row.set_index('Result')
+                self._df = pd.concat([self._df, new_row])
+                # self._df = self._df.set_index('Result')
 
-        print(f'*** End of battle ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
+            self.player_1_ships = deepcopy(player_1_ships_orig)
+            self.player_2_ships = deepcopy(player_2_ships_orig)
 
-        # TODO - Return an array representing the outcome?
+        return self._df
+
+
                 
             
             
@@ -323,7 +352,7 @@ def main():
 
     battle_sim = Battle_sim([test_ship, test_ship_b], [test_ship_2])
 
-    battle_sim.do_battle()
+    print(battle_sim.do_battle(sim_count=5))
 
 
 if __name__ == "__main__":

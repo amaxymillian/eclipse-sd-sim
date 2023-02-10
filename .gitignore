@@ -1,0 +1,3 @@
+#Exclude venv 
+.venv
+
