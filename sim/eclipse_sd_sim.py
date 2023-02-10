@@ -329,8 +329,11 @@ class Battle_sim:
                 
         #If we fall through check to see if any damage is left, if so just throw it on the largest ship
         if len(dmg_stacks) > 0:
-            print(f'leftover dmg_stacks: {dmg_stacks}')
-            sorted(eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships"), 
+            #edge case - is this the last surviving ship?  If so this damage is simple overkill and fizzles, combat is over
+            if eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships"):
+                
+                print(f'leftover dmg_stacks: {dmg_stacks}')
+                sorted(eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships"), 
                    key=lambda x : x.ship_type, reverse=True)[0]._hp -= sum([int(i) for i in dmg_stacks])
                 
         
