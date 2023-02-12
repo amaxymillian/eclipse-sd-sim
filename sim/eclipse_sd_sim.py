@@ -97,6 +97,7 @@ class Ship:
         self.ship_type = Ship_type
         self.player_num = player_num
         self.is_attacker = is_attacker
+        self.destroyed_flag = False
         if ship_parts:
             self.ship_parts = ship_parts.copy()
         else: 
@@ -222,6 +223,13 @@ class Battle_sim:
         for ship in eval(f"self.player_{player_num}_ships"):
             output_str += str(ship)
         return output_str
+
+    def get_surviving_count(self, player_num =1):
+        i = 0
+        for ship in [s for s in self.sorted_ships if s.player_num == player_num]:
+            if not ship.destroyed_flag:
+                i+=1
+        return i
       
     def do_battle(self, sim_count = 1):
         
@@ -248,11 +256,15 @@ class Battle_sim:
                 
             #print('Missiles Complete!')
             
-            
+            # Round loop
             for i in range(1,100): #Assume no combat will take more than 100 rounds for now
                 print(f'\n\nRound {i} begin...')
                 #Second fire all other weapons in initiative order
                 for ship in self.sorted_ships:
+                    #is this ship already destroyed? 
+                    if ship.destroyed_flag:
+                        continue
+                        #self.sorted_ships.remove(ship)
                     print(ship)
                     dmg = ship.fire_weapons()
                     print(dmg)
@@ -261,7 +273,8 @@ class Battle_sim:
                     
                 #If both sides have living ships continue, otherwise end
                 #print(f'p1 ship count: {len(self.player_1_ships)} ... p2 ship count: {len(self.player_2_ships)}')
-                if len(self.player_1_ships) >= 1 and len(self.player_2_ships) >= 1:
+                #if len(self.player_1_ships) >= 1 and len(self.player_2_ships) >= 1:
+                if self.get_surviving_count(player_num=1) >= 1 and self.get_surviving_count(player_num=2) >=1 :
                     round +=1
                 else:
                     print('Combat complete..?')
@@ -270,8 +283,12 @@ class Battle_sim:
             print(f'*** End of battle ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
 
             # TODO - Return a dataframe representing the outcome?
-            result_arr = f"{self.ppships(1)} <-> {self.ppships(2)}"
+            result_arr = f"|{self.ppships(1)} <-> {self.ppships(2)}|"
             # print(f"self._df.loc['Result':]: {self._df.loc['Result':]}")
+            if '|P1 s:  <-> P2 s: |' in result_arr:
+                #This means all ships destroyed one another - an error condition that cannot occur AFAIK
+                raise RuntimeError
+                
             if result_arr in self._df.index:
                 self._df.loc[result_arr, 'Raw Count'] += 1
             else:
@@ -280,9 +297,15 @@ class Battle_sim:
                 self._df = pd.concat([self._df, new_row])
                 # self._df = self._df.set_index('Result')
 
+            # Reset this object for another iteration
             self.player_1_ships = deepcopy(player_1_ships_orig)
             self.player_2_ships = deepcopy(player_2_ships_orig)
 
+            self.sorted_ships = sorted(self.player_1_ships + self.player_2_ships, reverse=True)
+
+
+        # With all simulated battles complete, calculate percentage distribution of the various unique outcomes
+        self._df['Percentage'] = (self._df['Raw Count'] / self._df['Raw Count'].sum()) * 100
         return self._df
 
 
@@ -298,6 +321,9 @@ class Battle_sim:
         
         for ship in sorted(eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships"), key=lambda x : x.ship_type, reverse=True):
             print(f"largest ship is: {ship} ?")
+            if ship.destroyed_flag:
+                print(f"ship {ship} has already been destroyed, skipping...")
+                continue
             #If we can destroy this ship, do so, deleting it and using the bare minimium of damage stacks
             if sum([int(i) for i in dmg_stacks]) >= ship._hp:
                 #efficiently kill this ship so that no damage is wasted
@@ -308,7 +334,11 @@ class Battle_sim:
                         #efficient damage, pop stack, delete this ship, and continue
                         print(f"destroying ship: {ship}, with new stack {stack} and temp_stack {temp_stack}")
                         dmg_stacks.remove(stack)
-                        eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships").remove(ship)
+
+                        #This doesn't work as the destroyed ship may not have been calculated to fire - we need to mark it destroyed and so exclude it from being
+                        # able to fire!
+                        #eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships").remove(ship)
+                        ship.destroyed_flag = True
                         break
                     elif stack + temp_stack < ship._hp:
                         #add this stack to temp_stack
@@ -326,10 +356,12 @@ class Battle_sim:
                #Any stack damage left will be applied to the next surviving ship
             else: #All damage available can't destroy this ship so try the next one
                 continue
+
+        
                 
         #If we fall through check to see if any damage is left, if so just throw it on the largest ship
         if len(dmg_stacks) > 0:
-            #edge case - is this the last surviving ship?  If so this damage is simple overkill and fizzles, combat is over
+            #edge case - is this the last surviving ship?  If so this damage is simple overkill, combat is over
             if eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships"):
                 
                 print(f'leftover dmg_stacks: {dmg_stacks}')
@@ -355,7 +387,7 @@ def main():
 
     battle_sim = Battle_sim([test_ship, test_ship_b], [test_ship_2])
 
-    print(battle_sim.do_battle(sim_count=5))
+    print(battle_sim.do_battle(sim_count=1000))
 
 
 if __name__ == "__main__":
