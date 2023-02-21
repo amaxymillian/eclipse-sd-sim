@@ -3,6 +3,23 @@ import pandas as pd
 from enum import IntEnum
 from copy import deepcopy
 
+import logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# create console handler and set level to debug
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+
+# create formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# add formatter to ch
+ch.setFormatter(formatter)
+
+# add ch to logger
+logger.addHandler(ch)
+
 class Ship_type(IntEnum):
     INTERCEPTOR = 1
     CRUISER = 2
@@ -97,7 +114,6 @@ class Ship:
         self.ship_type = Ship_type
         self.player_num = player_num
         self.is_attacker = is_attacker
-        self.destroyed_flag = False
         if ship_parts:
             self.ship_parts = ship_parts.copy()
         else: 
@@ -105,7 +121,7 @@ class Ship:
             self.ship_parts = ship_types[Ship_type]["installed_parts"].copy()
         
         self.update_init()
-        self.update_hp()
+        self.recalc_hp()
         self.update_targeting()
 
         
@@ -117,12 +133,18 @@ class Ship:
         
         self.ship_parts[part_position] = part_name
         self.update_init()
-        self.update_hp()
+        self.recalc_hp()
         
     def remove_part(self, part_position):
         #Removing a part resets the part to its default configuration - may not need this
         self.ship_parts[part_position] = ship_types[self.ship_type]["installed_parts"][part_position]
         self.update_init()
+
+    def get_hp(self) -> int:
+        return self._hp
+
+    def set_hp(self, new_hp):
+        self._hp = new_hp
         
     def get_avail_power(self) -> int:
         power = 0
@@ -147,7 +169,7 @@ class Ship:
             elif 'damage' in ship_parts[part]:
                 atk_roll = random.randint(1,6)
                 if atk_roll + self._targeting >= 6:
-                    print(f"ship {self} rolls a {atk_roll} for a hit and adds {ship_parts[part]['damage']} to the damage stack!")
+                    logger.debug(f"ship {self} rolls a {atk_roll} for a hit and adds {ship_parts[part]['damage']} to the damage stack!")
                     dmg_stack.append(ship_parts[part]['damage'])
                 
         return dmg_stack
@@ -164,7 +186,7 @@ class Ship:
                 
         return self._initiative
     
-    def update_hp(self) -> int:
+    def recalc_hp(self) -> int:
         #Recalc HP of this ship which is 1 + any installed part with hull add ons
         self._hp = 1
         
@@ -187,9 +209,10 @@ class Ship:
                 self._targeting += ship_parts[part]['targeting']
                 
         return self._targeting
+
         
     def __lt__(self, other):
-        print(f'sorting: self._initiatve: {self._initiative}, other._init: { other._initiative}')
+        logger.debug(f'sorting: self._initiatve: {self._initiative}, other._init: { other._initiative}')
         if other._initiative == self._initiative:
             #ties go to the defender
             return self.is_attacker
@@ -199,7 +222,8 @@ class Ship:
     
     def __str__(self):
         #return(f"P-{self.player_num}/T-{self.ship_type}/Atk:{self.is_attacker}, parts: {self.ship_parts}")
-        return(f"P-{self.player_num}/T-{self.ship_type}/Atk:{self.is_attacker}/HP:{self._hp}")
+        #return(f"P-{self.player_num}/T-{self.ship_type}/Atk:{self.is_attacker}/HP:{self._hp}")
+        return(f"P{self.player_num}/T{self.ship_type}/HP{self._hp}")
         
 
 class Battle_sim:
@@ -227,7 +251,7 @@ class Battle_sim:
     def get_surviving_count(self, player_num =1):
         i = 0
         for ship in [s for s in self.sorted_ships if s.player_num == player_num]:
-            if not ship.destroyed_flag:
+            if ship.get_hp() > 0:
                 i+=1
         return i
       
@@ -245,7 +269,7 @@ class Battle_sim:
         for battle in range(sim_count):
             round = 1
 
-            print(f'*** Start of battle {battle} ***\n {self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
+            logger.info(f'*** Start of battle {battle} ***\n {self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
             
             #First fire missiles in initiative order
             #print('Begin Missiles')
@@ -258,16 +282,16 @@ class Battle_sim:
             
             # Round loop
             for i in range(1,100): #Assume no combat will take more than 100 rounds for now
-                print(f'\n\nRound {i} begin...')
+                logger.debug(f'\n\nRound {i} begin...')
                 #Second fire all other weapons in initiative order
                 for ship in self.sorted_ships:
                     #is this ship already destroyed? 
-                    if ship.destroyed_flag:
+                    if ship.get_hp() == 0:
                         continue
                         #self.sorted_ships.remove(ship)
-                    print(ship)
+                    logger.debug(ship)
                     dmg = ship.fire_weapons()
-                    print(dmg)
+                    logger.debug(dmg)
                     if dmg:
                         self.assign_dmg(ship, dmg)
                     
@@ -277,10 +301,10 @@ class Battle_sim:
                 if self.get_surviving_count(player_num=1) >= 1 and self.get_surviving_count(player_num=2) >=1 :
                     round +=1
                 else:
-                    print('Combat complete..?')
+                    logger.debug('Combat complete..?')
                     break
 
-            print(f'*** End of battle ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
+            logger.info(f'*** End of battle ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
 
             # TODO - Return a dataframe representing the outcome?
             result_arr = f"|{self.ppships(1)} <-> {self.ppships(2)}|"
@@ -317,12 +341,12 @@ class Battle_sim:
           
         #For now, all ships use the Ancients strat which is destroy the largest ship possible
         #If no ships can be destroyed damage the largest ship possible
-        print(f"firing ship: {firing_ship}, dmg_stacks: {dmg_stacks}")
+        logger.debug(f"firing ship: {firing_ship}, dmg_stacks: {dmg_stacks}")
         
         for ship in sorted(eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships"), key=lambda x : x.ship_type, reverse=True):
-            print(f"largest ship is: {ship} ?")
-            if ship.destroyed_flag:
-                print(f"ship {ship} has already been destroyed, skipping...")
+            logger.debug(f"largest ship is: {ship} ?")
+            if ship._hp == 0:
+                logger.debug(f"ship {ship} has already been destroyed, skipping...")
                 continue
             #If we can destroy this ship, do so, deleting it and using the bare minimium of damage stacks
             if sum([int(i) for i in dmg_stacks]) >= ship._hp:
@@ -332,26 +356,27 @@ class Battle_sim:
                 for stack in dmg_stacks.copy():
                     if stack + temp_stack == ship._hp:
                         #efficient damage, pop stack, delete this ship, and continue
-                        print(f"destroying ship: {ship}, with new stack {stack} and temp_stack {temp_stack}")
+                        logger.debug(f"destroying ship: {ship}, with new stack {stack} and temp_stack {temp_stack}")
                         dmg_stacks.remove(stack)
 
                         #This doesn't work as the destroyed ship may not have been calculated to fire - we need to mark it destroyed and so exclude it from being
                         # able to fire!
                         #eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships").remove(ship)
-                        ship.destroyed_flag = True
+                        ship.set_hp(0)
                         break
                     elif stack + temp_stack < ship._hp:
                         #add this stack to temp_stack
-                        print(f'stack {stack} + temp_stack {temp_stack} < ship._hp {ship._hp}')
+                        logger.debug(f'stack {stack} + temp_stack {temp_stack} < ship._hp {ship._hp}')
                         temp_stack+=stack
                         dmg_stacks.remove(stack)
                         
                     else:
                         # Wasted damage
                         # TODO - reallocate, for now just burn this one
-                        print(f"destroying ship: {ship}, with new stack {stack} and temp_stack {temp_stack}")
+                        logger.debug(f"destroying ship: {ship}, with new stack {stack} and temp_stack {temp_stack}")
                         dmg_stacks.remove(stack)
                         eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships").remove(ship)
+                        ship.set_hp(0)
                         break
                #Any stack damage left will be applied to the next surviving ship
             else: #All damage available can't destroy this ship so try the next one
@@ -360,13 +385,26 @@ class Battle_sim:
         
                 
         #If we fall through check to see if any damage is left, if so just throw it on the largest ship
-        if len(dmg_stacks) > 0:
-            #edge case - is this the last surviving ship?  If so this damage is simple overkill, combat is over
+        surviving_ships = sorted((s for s in eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships") if s._hp > 0), 
+                   key=lambda x : x.ship_type, reverse=True)
+        # We only assign leftover damage if there is leftover damage AND there are no surviving ships left to hit.  (e.g., if we overkilled the last ship)
+        if len(dmg_stacks) > 0 and len(surviving_ships) > 0:
+            largest_surviving_ship = surviving_ships[0]
+            total_dmg = sum([int(i) for i in dmg_stacks])
+            #because we set HPs to zero as we destroy them (but don't remove them from the list) we have to filter for the largest suriving ship that has HP
+            try:
+                largest_surviving_ship = surviving_ships[0]
+            except IndexError as e:
+                logger.error(f"List IndexError while attempting to locate largest ship: {e}") 
+            
+            if total_dmg > largest_surviving_ship._hp:
+                raise AttributeError(f"Error: total_dmg of {total_dmg} for ship {largest_surviving_ship} exceeds its current HP of {largest_surviving_ship._hp} "
+                                        "this ship should already be dead!")
+
             if eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships"):
                 
-                print(f'leftover dmg_stacks: {dmg_stacks}')
-                sorted(eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships"), 
-                   key=lambda x : x.ship_type, reverse=True)[0]._hp -= sum([int(i) for i in dmg_stacks])
+                logger.debug(f'leftover dmg_stacks: {dmg_stacks}')
+                largest_surviving_ship._hp -= total_dmg
                 
         
 
@@ -387,7 +425,7 @@ def main():
 
     battle_sim = Battle_sim([test_ship, test_ship_b], [test_ship_2])
 
-    print(battle_sim.do_battle(sim_count=1000))
+    print(battle_sim.do_battle(sim_count=10000))
 
 
 if __name__ == "__main__":
