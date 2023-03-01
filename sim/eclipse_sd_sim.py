@@ -79,21 +79,21 @@ ship_types = {
 
 # Need a data structure to represent the various tech tiles 
 ship_parts = {
-    Ship_part_names.ABSORPTION_SHIELD: {"type": "shield", "targeting": -1, "power": 4},
+    Ship_part_names.ABSORPTION_SHIELD: {"type": "shield", "shielding": -1, "power": 4},
     Ship_part_names.ANTIMATTER_CANNON: {"type": "cannon", "damage": 4, "power": -4},
     Ship_part_names.CONIFOLD_FIELD: {"type":"hull", "armor":3, "power": -2},
     Ship_part_names.ELECTRON_COMPUTER: {"type": "computer", "targeting": 1, "power": 0},
     Ship_part_names.FLUX_MISSILE: {"type": "missile", "damage": 1, "times_fired": 2, "power": 0}, 
     Ship_part_names.FUSION_DRIVE: {"type": "drive", "initiative": 2, "power": -2},
     Ship_part_names.FUSION_SOURCE: {"type": "source", "power": 6},
-    Ship_part_names.GAUSS_SHIELD: {"type": "shield", "targeting": -1, "power": 0},
+    Ship_part_names.GAUSS_SHIELD: {"type": "shield", "shielding": -1, "power": 0},
     Ship_part_names.GLUON_COMPUTER: {"type": "computer", "targeting": 3, "power":-2},
     Ship_part_names.HULL: {"type":"hull", "armor":1, "power":0},
     Ship_part_names.IMPROVED_HULL: {"type":"hull", "armor":2, "power":0},
     Ship_part_names.ION_CANNON: {"type": "cannon", "damage": 1, "power": -1},
     Ship_part_names.NUCLEAR_DRIVE: {"type": "drive", "initiative": 1, "power": -1},
     Ship_part_names.NUCLEAR_SOURCE: {"type": "source", "power": 3},
-    Ship_part_names.PHASE_SHIELD: {"type": "shield", "targeting": -2, "power": -1},
+    Ship_part_names.PHASE_SHIELD: {"type": "shield", "shielding": -2, "power": -1},
     Ship_part_names.PLASMA_CANNON: {"type": "cannon", "damage": 2, "power": -2},
     Ship_part_names.PLASMA_MISSILE: {"type": "missile", "damage": 2, "times_fired": 2, "power": -1}, 
     Ship_part_names.POSITRON_COMPUTER: {"type": "computer", "targeting": 2, "power": -1},
@@ -123,6 +123,7 @@ class Ship:
         self.update_init()
         self.recalc_hp()
         self.update_targeting()
+        self.update_shielding()
 
         
     def add_part(self, part_name, part_position):
@@ -160,7 +161,10 @@ class Ship:
         pass
     
     
-    def fire_weapons(self) -> list[int]:
+    def fire_weapons(self) -> list[tuple(int, int)]:
+        '''
+        Returns a list of tuples representing the potential damage for each weapon and its roll.  Actual hits require knowing the shielding of the enemy.
+        '''
         dmg_stack = []
         
         for part in self.ship_parts:
@@ -168,9 +172,12 @@ class Ship:
                 continue
             elif 'damage' in ship_parts[part]:
                 atk_roll = random.randint(1,6)
-                if atk_roll + self._targeting >= 6:
-                    logger.debug(f"ship {self} rolls a {atk_roll} for a hit and adds {ship_parts[part]['damage']} to the damage stack!")
-                    dmg_stack.append(ship_parts[part]['damage'])
+                if atk_roll == 1:
+                    #1 is always a miss
+                    continue
+                else:
+                    logger.debug(f"ship {self} rolls a {atk_roll} and adds that roll with {ship_parts[part]['damage']} to the damage stack!")
+                    dmg_stack.append((atk_roll, ship_parts[part]['damage']))
                 
         return dmg_stack
             
@@ -209,6 +216,26 @@ class Ship:
                 self._targeting += ship_parts[part]['targeting']
                 
         return self._targeting
+
+    def get_targeting(self):
+        return self._targeting
+
+
+    def update_shielding(self) -> int:
+        #Recalc shield of this ship which is 0 + any installed part with targetting add ons
+        self._shielding = 0
+        
+        for part in self.ship_parts:
+            if part is None:
+                continue
+            elif 'shielding' in ship_parts[part]:
+                self._shielding += ship_parts[part]['shielding']
+                
+        return self._shielding
+
+
+    def get_shielding(self) -> int:
+        return self._shielding
 
         
     def __lt__(self, other):
@@ -333,12 +360,15 @@ class Battle_sim:
         return self._df
 
 
-                
+    def get_dmg(self, firing_ship: Ship, target_ship: Ship, dmg_stacks: list[tuple(int, int)] ):
+        """
+        Giving the firing ship and target ship and a list of damage stacks, return an int representing how much
+        damage this ship can do to the target?
+        """
+        
             
             
-    def assign_dmg(self, firing_ship, dmg_stacks: list[int] ):
-        #TODO - all damage is damage at a certain shield level so there's another dimension to this...
-          
+    def assign_dmg(self, firing_ship: Ship, dmg_stacks: list[tuple(int, int)] ):        
         #For now, all ships use the Ancients strat which is destroy the largest ship possible
         #If no ships can be destroyed damage the largest ship possible
         logger.debug(f"firing ship: {firing_ship}, dmg_stacks: {dmg_stacks}")
@@ -348,6 +378,10 @@ class Battle_sim:
             if ship._hp == 0:
                 logger.debug(f"ship {ship} has already been destroyed, skipping...")
                 continue
+
+            #Create a damage stack only of damage that can hit this ship
+            if firing_ship.get_targeting() + 
+
             #If we can destroy this ship, do so, deleting it and using the bare minimium of damage stacks
             if sum([int(i) for i in dmg_stacks]) >= ship._hp:
                 #efficiently kill this ship so that no damage is wasted
