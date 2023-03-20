@@ -296,13 +296,13 @@ class Battle_sim:
         
     # TODO - type hints in 3.10 allow Ship | None format - refactor when upgrading python
     def get_largest_targetable_ship(self, firing_ship: Ship, roll) -> Ship:
-        ships_to_check = self.get_player_ships(firing_ship.player_num % 2 + 1)
+        ships_to_check = self.get_player_ships(firing_ship.player_num)
         # With default reverse sort, this should always go from largest ship to smallest
         for ship in ships_to_check:
             if ship.get_hp() <= 0:
                 #skip dead ships
                 continue
-            if firing_ship.get_targeting() + roll - ship.get_shielding() >= 6:
+            elif firing_ship.get_targeting() + roll - ship.get_shielding() >= 6:
                 return ship
         return None
 
