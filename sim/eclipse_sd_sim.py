@@ -1,15 +1,16 @@
-import random
+import random, os
+import json, jsonpickle
 import pandas as pd
 from enum import IntEnum
 from copy import deepcopy
 
 import logging
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # create console handler and set level to debug
 ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
+ch.setLevel(logging.INFO)
 
 # create formatter
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -309,6 +310,23 @@ class Battle_sim:
 
     def get_player_ships(self, player_num, sort_reverse=True) -> list[Ship]:
         return sorted(eval(f"self.player_{player_num % 2 + 1}_ships"), key=lambda x : x.ship_type, reverse=sort_reverse)
+    
+
+    def save_fleet(self, player_num: int, filepath: str) -> None:
+        # Nothing fancy here just if branch instead of an eval
+        with open(filepath, 'w') as f:
+            if player_num == 1:
+                json.dump(jsonpickle.encode(self.player_1_ships), f, indent=4)
+            else:
+                json.dump(jsonpickle.encode(self.player_2_ships), f, indent=4)
+
+    def load_fleet(self, player_num: int, filepath: str) -> None:
+        with open(filepath, 'r') as f:
+            if player_num == 1:
+                self.player_1_ships = jsonpickle.decode(json.load(f))
+            else:
+                self.player_2_ships = jsonpickle.decode(json.load(f))
+
       
     def do_battle(self, sim_count = 1):
         
