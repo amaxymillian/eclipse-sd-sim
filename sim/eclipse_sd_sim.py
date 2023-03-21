@@ -107,8 +107,10 @@ ship_parts = {
     Ship_part_names.ZEROPOINT_SOURCE: {"type": "source", "power": 12}
 }
 
-# Need to be able to simulate the rolling of die, assigning of damage per
-# round
+
+# TODO: Create a 'Ship_Class' class to store the ship_parts so that instances of 'Ship' are really about particular
+# ship damage tracking?
+
 class Ship:
 
     def __init__(self, Ship_type, player_num, is_attacker = True, ship_parts: list[str] = None):
@@ -159,6 +161,7 @@ class Ship:
           
         
     def fire_missiles(self) -> list[int]:
+        #TODO firing missiles should really just be their own battle sim that happens only once as 'Round 0'...?
         pass
     
     
@@ -266,7 +269,8 @@ class Battle_sim:
         #    print(ship)
 
         #Init results dataframe
-        self._df = pd.DataFrame(columns=['Result', 'Raw Count', 'Percentage'])
+        self._df = pd.DataFrame(columns=['Result', 'Winning Player', 'Surviving Intr', 'Surviving Crus', 'Surviving Dred', 'Surviving Strb', 'Raw Count', 'Percentage'])                                         
+        
         self._df = self._df.set_index('Result')
 
     def ppships(self, player_num):
@@ -311,6 +315,60 @@ class Battle_sim:
     def get_player_ships(self, player_num, sort_reverse=True) -> list[Ship]:
         return sorted(eval(f"self.player_{player_num % 2 + 1}_ships"), key=lambda x : x.ship_type, reverse=sort_reverse)
     
+    #TODO upgrade to Python 3.10 and support return list[Ship] | None
+    def get_surviving_ships(self, ship_type_filter: Ship_type = None) -> list[Ship]:
+        """Returns all ships for both players with HP > 0
+
+        Args:
+            ship_type_filter (Ship_type, optional): If specified, only return surviving ships of this type, e.g., Interceptor. Defaults to None.
+
+        Returns:
+            list[Ship]: Returns a list of Ship objects with HP > 0
+        """
+        ship_list = []
+        for ship in self.sorted_ships:
+            if ship.get_hp() > 0:
+                if ship_type_filter is None or ship.ship_type == ship_type_filter:
+                    ship_list.append(ship)
+        return ship_list
+    
+    def reset_ship_health_counts(self, surviving_ships: list[Ship]) -> list[Ship]:
+        """For the provided dataframe, iterate over ships in surviving ships column and reset their HPs to full.
+
+        Args:
+            surviving_ships (list[Ship]): A list of ships that need health counts reset.
+
+        Returns:
+            list[Ship]: The updated list of ships.
+        """
+        for ship in surviving_ships:
+            ship.recalc_hp()
+
+        return surviving_ships
+    
+
+    def get_flattened_df(self) -> pd.DataFrame:
+        """Given that our internal dataframe stores all distinct outcomes (e.g., a surviving ship with 1 hp is distinct 
+        from one with 2 hp) this method removes HP as a distinguishing characteristic and flattens the df accordingly.
+
+        Returns:
+            pd.DataFrame: A Dataframe where each row corresponds a battle outcome with a distinct number of surviving ships
+        """
+        logger.debug(f'Dataframe before flattening: \n{self._df}')
+        '''
+        flattened_df = self._df['Surviving Ships'].map(lambda x: self.reset_ship_health_counts(x))
+        flattened_df.name = 'Surviving Ships'
+
+        self._df.update(flattened_df)
+
+        self._df = self._df.groupby(['Surviving Ships']).size().reset_index(name='count')
+        '''
+        #flattened_df = self._df.groupby(self._df[['Surviving Intr', 'Surviving Crus', 'Surviving Dred', 'Surviving Strb']].map(tuple)).apply(lambda x : x)
+        raise NotImplementedError
+        flattened_df = pd.DataFrame()
+        logger.debug(f'Dataframe after flattening: \n{self._df}')
+        return flattened_df
+    
 
     def save_fleet(self, player_num: int, filepath: str) -> None:
         # Nothing fancy here just if branch instead of an eval
@@ -326,6 +384,21 @@ class Battle_sim:
                 self.player_1_ships = jsonpickle.decode(json.load(f))
             else:
                 self.player_2_ships = jsonpickle.decode(json.load(f))
+
+
+    def print_battle_stats(self):
+        """Print the winner and their surviving ships
+        """
+        print(f"\n***BATTLE RESULTS ***\n\n{self._df}")
+
+        filter_df = self._df
+        filter_df[['Surviving Intr', 'Surviving Crus', 'Surviving Dred', 'Surviving Strb']] = filter_df[['Surviving Intr', 'Surviving Crus', 'Surviving Dred', 'Surviving Strb']].applymap(lambda x: len(x))
+        filter_df = filter_df.groupby([ 'Winning Player', 'Surviving Intr', 'Surviving Crus', 'Surviving Dred', 'Surviving Strb']).sum()
+        
+        filter_df['Percentage'] = (filter_df['Raw Count'] / filter_df['Raw Count'].sum()) * 100
+        
+        print(f"\nDistinct Outcome Percentages:\n{filter_df}")
+
 
       
     def do_battle(self, sim_count = 1):
@@ -383,13 +456,19 @@ class Battle_sim:
             result_arr = f"|{self.ppships(1)} <-> {self.ppships(2)}|"
             # print(f"self._df.loc['Result':]: {self._df.loc['Result':]}")
             if '|P1 s:  <-> P2 s: |' in result_arr:
-                #This means all ships destroyed one another - an error condition that cannot occur AFAIK
+                #This means all ships destroyed one another - an error condition that cannot occur AFAIK - 
+                # defender wins initiative ties so there is now way for ordinance to pass each other in space
                 raise RuntimeError
                 
             if result_arr in self._df.index:
                 self._df.loc[result_arr, 'Raw Count'] += 1
             else:
-                new_row = pd.DataFrame([{'Result': result_arr, 'Raw Count': 1, 'Percentage': 0}])
+                new_row = pd.DataFrame([{'Result': result_arr,  'Winning Player': self.get_surviving_ships()[0].player_num, 
+                                         'Surviving Intr': self.get_surviving_ships(Ship_type.INTERCEPTOR), 
+                                         'Surviving Crus': self.get_surviving_ships(Ship_type.CRUISER),
+                                         'Surviving Dred': self.get_surviving_ships(Ship_type.DREADNOUGHT),
+                                         'Surviving Strb': self.get_surviving_ships(Ship_type.STARBASE),
+                                         'Raw Count': 1, 'Percentage': 0}])
                 new_row = new_row.set_index('Result')
                 self._df = pd.concat([self._df, new_row])
                 # self._df = self._df.set_index('Result')
@@ -486,7 +565,10 @@ def main():
 
     battle_sim = Battle_sim([test_ship, test_ship_b], [test_ship_2])
 
-    print(battle_sim.do_battle(sim_count=10000))
+    battle_sim.do_battle(sim_count=1000)
+    battle_sim.print_battle_stats()
+    #battle_sim.get_flattened_df()
+    pass
 
 
 if __name__ == "__main__":

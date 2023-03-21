@@ -1,3 +1,6 @@
 #Exclude venv 
 .venv
 
+sim/Scratch.ipynb
+.gitignore
+sim/.ipynb_checkpoints/Scratch-checkpoint.ipynb
