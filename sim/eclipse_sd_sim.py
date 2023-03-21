@@ -176,12 +176,38 @@ class Ship:
                 continue
             elif 'damage' in ship_parts[part]:
                 atk_roll = random.randint(1,6)
-                if atk_roll == 1:
-                    #1 is always a miss
-                    continue
-                else:
-                    logger.debug(f"ship {self} rolls a {atk_roll} and adds that roll with {ship_parts[part]['damage']} to the damage stack!")
-                    dmg_stack.append((atk_roll, ship_parts[part]['damage']))
+                if ship_parts[part]['damage'] == 'RIFT_DAMAGE':
+                    # Rift cannons work very differently: 1: deal 1 dmg to a ship with a rift weapon equipped,
+                    # 2 or 3 is a miss, 4 is one guaranteed damage to the target, 5 is two gauranteed damage, 
+                    # 6 is 3 damage to the target and 1 to a rift equipped ship
+
+                    #Gauranteed target damage can be treated as rolling a nat 6 for that damage amount
+                    if atk_roll == 1:
+                        #Special self damage
+                        dmg_stack.append((-1, 1))
+                        logger.debug(f"ship {self} rolls a {atk_roll} on a rift cannon and adds 1 friendly fire damage to the damage stack!")
+                    elif atk_roll == 2 or atk_roll == 3:
+                        #miss
+                        continue
+                    elif atk_roll == 4:
+                        dmg_stack.append((6, 1))
+                        logger.debug(f"ship {self} rolls a {atk_roll} on a rift cannon and adds 1 rift damage to the damage stack!")
+                    elif atk_roll == 5:
+                        dmg_stack.append((6, 2))
+                        logger.debug(f"ship {self} rolls a {atk_roll} on a rift cannon and adds 2 rift damage to the damage stack!")
+                    else: #A 6
+                        dmg_stack.append((6, 3))
+
+                        #Special self damage
+                        dmg_stack.append((-1, 1))
+                        logger.debug(f"ship {self} rolls a {atk_roll} on a rift cannon and adds 3 rift damage and 1 friendly fire damage to the damage stack!")
+                else:    
+                    if atk_roll == 1:
+                        #1 is always a miss
+                        continue
+                    else:
+                        logger.debug(f"ship {self} rolls a {atk_roll} and adds that roll with {ship_parts[part]['damage']} to the damage stack!")
+                        dmg_stack.append((atk_roll, ship_parts[part]['damage']))
                 
         return dmg_stack
             
@@ -221,6 +247,35 @@ class Ship:
                 
         return self._targeting
 
+    def get_initiative(self, defender_weighted: bool = False) -> int:
+        """Returns the current initiatve value for this ship.
+
+        Args:
+            defender_weighted (bool, optional): If specified, multiply initiative by 2 and add player_num-1 
+            to make sure there are no initiative ties. This works because initiative is comparative and absolute
+            value doesn't matter.  Defaults to False.
+
+            Consider the following example:
+            Attacker has 3 ships with initiative 2, 2, and 4.  
+            Defender has 2 ships with initiative 1, 2, and 3.
+
+            Attack order should be A4, D3, D2, (A2, A2), D1.
+
+            Using the above algorith we transform the initiatves as follows:
+            Attacker: 4, 4, 8
+            Defender: 3, 5, 7
+
+            Attacker order can now be reverse sorted and works as expected: 8, 7, 5, (4, 4), 3
+
+        Returns:
+            int: A number greater than zero representing the current initiatve value for this ship.
+        """
+        if defender_weighted:
+            return self._initiative * 2 + self.player_num - 1
+        else:
+            return self._initiative
+        
+    
     def get_targeting(self):
         return self._targeting
 
@@ -262,16 +317,24 @@ class Battle_sim:
         self.player_1_ships = player_1_ships
         self.player_2_ships = player_2_ships
         
-        #Determine initiative order
+        # Determine initiative order by creating lists for each distinct group of ships that fire at a single moment.
+        # Note, opposing ships can never fire at the same time in Eclipse as defenders win all initiative ties.
         self.sorted_ships = sorted(player_1_ships + player_2_ships, reverse=True)
-        
-        #for ship in self.sorted_ships:
-        #    print(ship)
+        self.create_ship_init_dict()
 
         #Init results dataframe
         self._df = pd.DataFrame(columns=['Result', 'Winning Player', 'Surviving Intr', 'Surviving Crus', 'Surviving Dred', 'Surviving Strb', 'Raw Count', 'Percentage'])                                         
         
         self._df = self._df.set_index('Result')
+
+    def create_ship_init_dict(self):
+        self.ships_init_dict = {}
+        for ship in self.sorted_ships:
+            weighted_init = ship.get_initiative(defender_weighted=True)
+            if weighted_init in self.ships_init_dict:
+                self.ships_init_dict[weighted_init].append(ship)
+            else:
+                self.ships_init_dict[weighted_init] = [ship]
 
     def ppships(self, player_num):
         output_str = f'P{player_num} s: '
@@ -301,7 +364,7 @@ class Battle_sim:
         
     # TODO - type hints in 3.10 allow Ship | None format - refactor when upgrading python
     def get_largest_targetable_ship(self, firing_ship: Ship, roll) -> Ship:
-        ships_to_check = self.get_player_ships(firing_ship.player_num)
+        ships_to_check = self.get_player_ships(firing_ship.player_num, get_other_player=True)
         # With default reverse sort, this should always go from largest ship to smallest
         for ship in ships_to_check:
             if ship.get_hp() <= 0:
@@ -312,8 +375,23 @@ class Battle_sim:
         return None
 
 
-    def get_player_ships(self, player_num, sort_reverse=True) -> list[Ship]:
-        return sorted(eval(f"self.player_{player_num % 2 + 1}_ships"), key=lambda x : x.ship_type, reverse=sort_reverse)
+    def get_player_ships(self, player_num: int, get_other_player: bool = False, sort_reverse: bool = True) -> list[Ship]:
+        """Get a list of ships owned by the indicated player number or the list of ships owned by the 'other' player in the battle.
+
+        Args:
+            player_num (int): The player number whose ships are desired
+            get_other_player (bool, optional): If set to False returns the other player's ships.  E.g., returns player 2's ships 
+                                                if player 1 is indicated with the first parameter. Defaults to False.
+            sort_reverse (bool, optional): If set to false return ships in ascending initiative order, otherwise Descending. Defaults to True.
+
+        Returns:
+            list[Ship]: A list of Ship objects representing the requested player's ships.
+        """
+        if get_other_player:
+            return sorted(eval(f"self.player_{player_num % 2 + 1}_ships"), key=lambda x : x.ship_type, reverse=sort_reverse)
+        else:
+            return sorted(eval(f"self.player_{player_num}_ships"), key=lambda x : x.ship_type, reverse=sort_reverse)
+        
     
     #TODO upgrade to Python 3.10 and support return list[Ship] | None
     def get_surviving_ships(self, ship_type_filter: Ship_type = None) -> list[Ship]:
@@ -408,7 +486,7 @@ class Battle_sim:
         #Loop until all ships on one side or the other are defeated.
         #Run the sim for sim_count times and return a probability distribution of the outcomes encountered
 
-        # Create backups of the ships to reset after each loop
+        # Create backups of the ships to reset after each loop... there's probably a better way to do this
         player_1_ships_orig = deepcopy(self.player_1_ships)
         player_2_ships_orig = deepcopy(self.player_2_ships)
 
@@ -429,17 +507,10 @@ class Battle_sim:
             # Round loop
             for i in range(1,100): #Assume no combat will take more than 100 rounds for now
                 logger.debug(f'\n\nRound {i} begin...')
-                #Second fire all other weapons in initiative order
-                for ship in self.sorted_ships:
-                    #is this ship already destroyed? 
-                    if ship.get_hp() == 0:
-                        continue
-                        #self.sorted_ships.remove(ship)
-                    logger.debug(ship)
-                    dmg = ship.fire_weapons()
-                    logger.debug(dmg)
-                    if dmg:
-                        self.assign_dmg(ship, dmg)
+                # Second fire all other weapons in initiative order; damage will be assigned and resolved in the order highest to lowest, defender wins all ties.
+                # Player 2 is always the defender
+                for init in sorted(self.ships_init_dict.keys(), reverse=True):
+                    self.process_one_init_group(self.ships_init_dict[init])
                     
                 #If both sides have living ships continue, otherwise end
                 #print(f'p1 ship count: {len(self.player_1_ships)} ... p2 ship count: {len(self.player_2_ships)}')
@@ -478,19 +549,51 @@ class Battle_sim:
             self.player_2_ships = deepcopy(player_2_ships_orig)
 
             self.sorted_ships = sorted(self.player_1_ships + self.player_2_ships, reverse=True)
+            self.create_ship_init_dict()
 
 
         # With all simulated battles complete, calculate percentage distribution of the various unique outcomes
         self._df['Percentage'] = (self._df['Raw Count'] / self._df['Raw Count'].sum()) * 100
         return self._df
+    
+
+    def process_one_init_group(self, ships: list[Ship]):
+        """For ships that share the same initiative, process the damage that they might deal to the other player's ships.
+
+        Args:
+            ships (list[Ship]): A list of ships with the same initiative value.
+        """
+        for ship in ships:
+            #is this ship already destroyed? 
+            if ship.get_hp() == 0:
+                continue
+                #self.sorted_ships.remove(ship)
+            logger.debug(ship)
+            dmg = ship.fire_weapons()
+            logger.debug(dmg)
+            if dmg:
+                self.assign_dmg(ship, dmg)
 
             
-    def assign_dmg(self, firing_ship: Ship, dmg_stacks: list[tuple[int, int]] ):        
-        #For now, all ships use the Ancients strat which is destroy the largest ship possible
+    def assign_dmg(self, firing_ship: Ship, dmg_stacks: list[tuple[int, int]] ):
+        """For now, all ships use the Ancients strat which is destroy the largest ship possible
+        
+        ToDo - Add support for smarter strategies, e.g., prefententially destroying ships that haven't fired yet.
+               Running a monte carlo within the monte carlo to identify statistically optimal dmg allocation??
+
+        Args:
+            firing_ship (Ship): The ship that fired this particular damage stack
+            dmg_stacks (list[tuple[int, int]]): The stack of potential damage from the ships firing on this 
+            particular initiative block.  (e.g., all shots fired from ships with initiative 4.)
+
+        Raises:
+            AttributeError: If damage is allocated to a ship that is already dead an AttributeError is raised.
+        """
+        
         #If no ships can be destroyed damage the largest ship possible
         logger.debug(f"firing ship: {firing_ship}, dmg_stacks: {dmg_stacks}")
         
-        for ship in self.get_player_ships(firing_ship.player_num):
+        for ship in self.get_player_ships(firing_ship.player_num, get_other_player=True):
             logger.debug(f"largest ship is: {ship} ?")
             if ship._hp == 0:
                 logger.debug(f"ship {ship} has already been destroyed, skipping...")
@@ -528,7 +631,7 @@ class Battle_sim:
                         logger.debug(f"destroying ship: {ship}, with new stack {dmg} and temp_stack {temp_stack}")
                         dmg_stacks.remove((roll, dmg))
                         target_ship_dmg_stacks.remove((roll, dmg))
-                        self.get_player_ships(firing_ship.player_num).remove(ship)
+                        self.get_player_ships(firing_ship.player_num, get_other_player=True).remove(ship)
                         ship.set_hp(0)
                         break
                #Any stack damage left will be applied to the next surviving ship
