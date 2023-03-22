@@ -184,7 +184,7 @@ class Ship:
                     #Gauranteed target damage can be treated as rolling a nat 6 for that damage amount
                     if atk_roll == 1:
                         #Special self damage
-                        dmg_stack.append((-1, 1))
+                        dmg_stack.append((-999, 1))
                         logger.debug(f"ship {self} rolls a {atk_roll} on a rift cannon and adds 1 friendly fire damage to the damage stack!")
                     elif atk_roll == 2 or atk_roll == 3:
                         #miss
@@ -199,7 +199,7 @@ class Ship:
                         dmg_stack.append((6, 3))
 
                         #Special self damage
-                        dmg_stack.append((-1, 1))
+                        dmg_stack.append((-999, 1))
                         logger.debug(f"ship {self} rolls a {atk_roll} on a rift cannon and adds 3 rift damage and 1 friendly fire damage to the damage stack!")
                 else:    
                     if atk_roll == 1:
@@ -349,16 +349,28 @@ class Battle_sim:
                 i+=1
         return i
 
-    def get_dmg(self, firing_ship: Ship, target_ship: Ship, dmg_stacks: list[tuple[int, int]] ):
-        """
-        Giving the firing ship and target ship and a list of damage stacks, return an int representing how much
-        damage this ship can do to the target?
-        """
-        target_dmg_stacks = []
-        for roll, damage in dmg_stacks:
-            if roll == 6 or firing_ship.get_targeting() + roll - target_ship.get_shielding() >= 6:
-                # This is a hit
-                target_dmg_stacks.append((roll, damage))
+    #TODO - type hint for return should include | None when this is upgraded to python 3.10+
+    def get_dmg(self, ship_dmg_stacks: dict[Ship, list[tuple[int, int]]], target_ship: Ship ) ->  dict[Ship, list[tuple[int, int]]]:
+        """Given a dictionary of ships with lists of tuples representing the attack rolls they've made for this round, determine 
+        how many of those stacks can hit the specified target ship.
+
+        Args:
+            ship_dmg_stacks (dict[Ship, list[tuple[int, int]]]): A dict with Ship instances as keys and values as lists of the tuples
+            (roll, damage).
+            target_ship (Ship): The ship potentially being fired on.
+
+        Returns:
+            dict[Ship, list[tuple[int, int]]]: Only damage stacks that can hit the targetted ship are returned.
+        """        
+        target_dmg_stacks = {}
+        for ship in ship_dmg_stacks.keys():
+            for roll, damage in ship_dmg_stacks[ship]:
+                if roll == 6 or ship.get_targeting() + roll - target_ship.get_shielding() >= 6:
+                    # This is a hit
+                    if ship in target_dmg_stacks:
+                        target_dmg_stacks[ship].append((roll, damage))
+                    else:
+                        target_dmg_stacks[ship] = [(roll, damage)]
 
         return target_dmg_stacks
         
@@ -478,6 +490,23 @@ class Battle_sim:
         print(f"\nDistinct Outcome Percentages:\n{filter_df}")
 
 
+
+    def process_rift_stacks(self, firing_ship: Ship, dmg_stacks: list[tuple[int,int]]) -> None:
+        """Process any rift damage in the dmg_stacks.
+         
+           The rules for self inflicted rift damage are:
+        Rift damage to your own Ships must be assigned to Ships that have Rift weapons.  If possible, 
+        the damage is assigned so that your ships with Rift weapons are destroyed from largest to smallest.
+        If none of your Ships with Rift weapons can be destroyed, the damage is assigned to inflict as much
+        damage to them as possible, from largest to smallest.
+
+        Args:
+            firing_ship (Ship): The f
+            dmg_stacks (List[tuple): _description_
+        """
+        raise NotImplementedError
+
+
       
     def do_battle(self, sim_count = 1):
         
@@ -563,6 +592,7 @@ class Battle_sim:
         Args:
             ships (list[Ship]): A list of ships with the same initiative value.
         """
+        ship_dmg_stacks = {}
         for ship in ships:
             #is this ship already destroyed? 
             if ship.get_hp() == 0:
@@ -570,70 +600,90 @@ class Battle_sim:
                 #self.sorted_ships.remove(ship)
             logger.debug(ship)
             dmg = ship.fire_weapons()
-            logger.debug(dmg)
             if dmg:
-                self.assign_dmg(ship, dmg)
+                logger.debug(dmg)
+                ship_dmg_stacks[ship] = dmg
+
+        # Since these ships all fire 'at once' the damage stack should be assigned simultaneously not one at a time
+        if ship_dmg_stacks:
+            self.assign_dmg(ship_dmg_stacks)
 
             
-    def assign_dmg(self, firing_ship: Ship, dmg_stacks: list[tuple[int, int]] ):
+    #def assign_dmg(self, firing_ships: list[Ship], dmg_stacks: list[tuple[int, int]] ):
+    def assign_dmg(self, ship_dmg_stacks: dict[Ship, list[tuple[int, int]]] ):
         """For now, all ships use the Ancients strat which is destroy the largest ship possible
         
         ToDo - Add support for smarter strategies, e.g., prefententially destroying ships that haven't fired yet.
                Running a monte carlo within the monte carlo to identify statistically optimal dmg allocation??
 
         Args:
-            firing_ship (Ship): The ship that fired this particular damage stack
-            dmg_stacks (list[tuple[int, int]]): The stack of potential damage from the ships firing on this 
-            particular initiative block.  (e.g., all shots fired from ships with initiative 4.)
+            ship_dmg_stacks (dict[Ship, list[tuple[int, int]]]): The stack of potential damage from the ships firing
+            on this particular initiative block.  (e.g., all shots fired from ships with initiative 4.)
 
         Raises:
             AttributeError: If damage is allocated to a ship that is already dead an AttributeError is raised.
-        """
+        """        
+       
         
-        #If no ships can be destroyed damage the largest ship possible
-        logger.debug(f"firing ship: {firing_ship}, dmg_stacks: {dmg_stacks}")
-        
-        for ship in self.get_player_ships(firing_ship.player_num, get_other_player=True):
-            logger.debug(f"largest ship is: {ship} ?")
-            if ship._hp == 0:
-                logger.debug(f"ship {ship} has already been destroyed, skipping...")
+        logger.debug(f"ship_dmg_stacks: {ship_dmg_stacks}")
+
+    
+        firing_player_num = list(ship_dmg_stacks.keys())[0].player_num
+        for target_ship in self.get_player_ships(firing_player_num, get_other_player=True):
+            logger.debug(f"largest ship is: {target_ship} ?")
+            if target_ship._hp == 0:
+                logger.debug(f"ship {target_ship} has already been destroyed, skipping...")
                 continue
 
             #Create a damage stack only of damage that can hit this ship
-            target_ship_dmg_stacks = self.get_dmg(firing_ship, ship, dmg_stacks)
+            target_ship_dmg_stacks = self.get_dmg(ship_dmg_stacks, target_ship)
+
+            if not target_ship_dmg_stacks:
+                #If there are no stacks that can hit this ship, go to the next one
+                continue
 
             #If we can destroy this ship, do so, deleting it and using the bare minimium of damage stacks
-            if sum([int(i[1]) for i in target_ship_dmg_stacks]) >= ship._hp:
+            
+            # Todo - make this a badass nested list comprehension
+            potential_dmg = 0
+            for ship, dmg_list in target_ship_dmg_stacks.items():
+                potential_dmg += sum([int(i[1]) for i in dmg_list])
+            # potential_dmg = sum([int(i[1]) for i in target_ship_dmg_stacks.values()])
+            logger.debug(f"Total damage that could hit ship {target_ship} is: {potential_dmg}")
+            if potential_dmg >= target_ship._hp:
                 #efficiently kill this ship so that no damage is wasted
                 #TODO - antimatter cannon splitter not supported yet
                 temp_stack = 0
-                for roll, dmg in target_ship_dmg_stacks.copy():
-                    if dmg + temp_stack == ship._hp:
-                        #efficient damage, pop stack, delete this ship, and continue
-                        logger.debug(f"destroying ship: {ship}, with new stack {dmg} and temp_stack {temp_stack}")
-                        dmg_stacks.remove((roll, dmg))
-                        target_ship_dmg_stacks.remove((roll, dmg))
-                        #This doesn't work as the destroyed ship may not have been calculated to fire - we need to mark it destroyed and so exclude it from being
-                        # able to fire!
-                        #eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships").remove(ship)
-                        ship.set_hp(0)
-                        break
-                    elif dmg + temp_stack < ship._hp:
-                        #add this stack to temp_stack
-                        logger.debug(f'stack {dmg} + temp_stack {temp_stack} < ship._hp {ship._hp}')
-                        temp_stack+=dmg
-                        dmg_stacks.remove((roll, dmg))
-                        target_ship_dmg_stacks.remove((roll, dmg))
-                        
-                    else:
-                        # Wasted damage
-                        # TODO - reallocate, for now just burn this one
-                        logger.debug(f"destroying ship: {ship}, with new stack {dmg} and temp_stack {temp_stack}")
-                        dmg_stacks.remove((roll, dmg))
-                        target_ship_dmg_stacks.remove((roll, dmg))
-                        self.get_player_ships(firing_ship.player_num, get_other_player=True).remove(ship)
-                        ship.set_hp(0)
-                        break
+                #for roll, dmg in target_ship_dmg_stacks.copy():
+                for firing_ship, dmg_stack_list in target_ship_dmg_stacks.copy().items():
+                    for (roll, dmg) in dmg_stack_list:
+                        if dmg + temp_stack == target_ship._hp:
+                            #efficient damage, pop stack, delete this ship, and continue
+                            logger.debug(f"destroying ship: {target_ship}, with new stack {(roll, dmg)} and temp_stack {temp_stack}")
+                            
+                            ship_dmg_stacks[firing_ship].remove((roll, dmg))
+                            target_ship_dmg_stacks[firing_ship].remove((roll, dmg))
+                            #This doesn't work as the destroyed ship may not have been calculated to fire - we need to mark it destroyed and so exclude it from being
+                            # able to fire!
+                            #eval(f"self.player_{firing_ship.player_num % 2 + 1}_ships").remove(ship)
+                            target_ship.set_hp(0)
+                            break
+                        elif dmg + temp_stack < target_ship._hp:
+                            #add this stack to temp_stack
+                            logger.debug(f'stack {dmg} + temp_stack {temp_stack} < ship._hp {target_ship._hp}')
+                            temp_stack+=dmg
+                            ship_dmg_stacks[firing_ship].remove((roll, dmg))
+                            target_ship_dmg_stacks[firing_ship].remove((roll, dmg))
+                            
+                        else:
+                            # Wasted damage
+                            # TODO - reallocate, for now just burn this one
+                            logger.debug(f"destroying ship: {target_ship}, with new stack {dmg} and temp_stack {temp_stack}")
+                            ship_dmg_stacks[firing_ship].remove((roll, dmg))
+                            target_ship_dmg_stacks[firing_ship].remove((roll, dmg))
+                            self.get_player_ships(firing_player_num, get_other_player=True).remove(target_ship)
+                            target_ship.set_hp(0)
+                            break
                #Any stack damage left will be applied to the next surviving ship
             else: #All damage available can't destroy this ship so try the next one
                 continue
@@ -641,13 +691,15 @@ class Battle_sim:
                   
         #If we fall through check to see if any damage is left, if so just throw it on the largest ship
         # We only assign leftover damage if there is leftover damage AND there are no surviving ships left to hit.  (e.g., if we overkilled the last ship)
-        for roll, dmg in dmg_stacks:
-            largest_hit_ship = self.get_largest_targetable_ship(firing_ship, roll)
-            if largest_hit_ship:
-               logger.debug(f'Applying leftover dmg stack ({roll}, {dmg}) to ship {largest_hit_ship}')
-               largest_hit_ship.set_hp(largest_hit_ship.get_hp() - dmg)
-               if largest_hit_ship.get_hp() <= 0:
-                   raise AttributeError(f"Error: dmg of {dmg} for ship {largest_hit_ship} exceeded its available HP, so ship should already be dead!")
+        for firing_ship, dmg_stack_list in target_ship_dmg_stacks.items():
+            for (roll, dmg) in dmg_stack_list:
+                largest_hit_ship = self.get_largest_targetable_ship(firing_ship, roll)
+                if largest_hit_ship:
+                    logger.debug(f'Applying leftover dmg stack ({roll}, {dmg}) to ship {largest_hit_ship}')
+                    largest_hit_ship.set_hp(largest_hit_ship.get_hp() - dmg)
+                    if largest_hit_ship.get_hp() <= 0:
+                        raise AttributeError(f"Error: dmg of {dmg} for ship {largest_hit_ship} exceeded its available HP, so ship should already be dead!")
+
                 
         
 
