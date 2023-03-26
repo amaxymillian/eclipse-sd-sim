@@ -550,7 +550,7 @@ class Battle_sim:
                     logger.debug('Combat complete..?')
                     break
 
-            logger.info(f'*** End of battle ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
+            logger.info(f'*** End of battle {battle} ***\n{self.ppships(1)}\nvs\n{self.ppships(2)}\n *** ***')
 
             # TODO - Return a dataframe representing the outcome?
             result_arr = f"|{self.ppships(1)} <-> {self.ppships(2)}|"
