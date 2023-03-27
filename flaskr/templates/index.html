@@ -1,23 +1,166 @@
 <!doctype html>
-<title><h1>Eclipse Second Dawn - Battle Simulator</h1></title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<title>Eclipse Second Dawn - Battle Simulator</title>
+
+
+<head>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+
+  <style>
+  /* Appropriated from: https://www.w3schools.com/css/css_dropdowns.asp 
+  ... this seems to only work internally */
+  /* Style The Dropdown Button */
+  .dropbtn {
+    background-color: #377ba8;
+    color: white;
+    padding: 16px;
+    font-size: 16px;
+    border: none;
+    cursor: pointer;
+  }
+
+  /* The container <div> - needed to position the dropdown content */
+  .dropdown {
+    position: relative;
+    display: inline-block;
+  }
+
+  /* Dropdown Content (Hidden by Default) */
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    background-color: #f9f9f9;
+    min-width: 160px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+  }
+
+  /* Links inside the dropdown */
+  .dropdown-content a {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+  }
+
+  /* Change color of dropdown links on hover */
+  .dropdown-content a:hover {background-color: #f1f1f1}
+
+  /* Show the dropdown menu on hover */
+  .dropdown:hover .dropdown-content {
+    display: block;
+  }
+
+  /* Change the background color of the dropdown button when the dropdown content is shown */
+  .dropdown:hover .dropbtn {
+    background-color: #3e8e41;
+  }
+
+  </style>
+  
+  <script>
+  function addBlueprint(blueprintName) {
+    img = document.getElementById("blueprintImg")
+    if(img == null) {
+      img = document.createElement("img");
+      img.setAttribute("id", "blueprintImg")
+      document.getElementById("shipBlueprintDiv").appendChild(img);
+    }
+
+    switch(blueprintName) {
+      case 'Terran_Interceptor':
+        img.src = "/static/images/blueprints/Terran_Interceptor.png";
+        break;
+      case 'Terran_Cruiser':
+        img.src = "/static/images/blueprints/Terran_Cruiser.png";
+        break;
+      case 'Terran_Dreadnought':
+        img.src = "/static/images/blueprints/Terran_Dreadnought.png";
+        break;
+      case 'Terran_Starbase':
+        img.src = "/static/images/blueprints/Terran_Starbase.png";
+        break;
+      default:
+        console.log(`Error, unrecognized blueprintName ${blueprintName}!`);
+        break;
+
+    }
+    
+    //document.body.appendChild(img);
+    
+  }
+
+  function showShipDesigner() {
+    //alert("clicked!");
+    shipDesigner = document.getElementById("shipDesigner");
+    //shipDesigner.removeAttribute("hidden");
+    shipDesigner.style.display = "block";
+  }
+
+  </script>
+</head>
+<!--
 <nav>
   <h1>Flaskr</h1>
   <ul>
 
   </ul>
 </nav>
+-->
 <section class="content">
   <header>
     <h1>Eclipse SD Sim</h1>>
   </header>
+  
+  <table>
+    <tr>
+      <div class="dropdown">
+        <button class="dropbtn">Ship Designer</button>
+        <div class="dropdown-content">
+          <a href="#" onclick="showShipDesigner()">New...</a>
+          <a href="#">Open Saved Ship</a>
+          <a href="#">Save Current Ship </a>
+        </div>
+      </div>
+    </tr>
+    <tr>
+      <div class="dropdown">
+        <button class="dropbtn">Battle Simulator</button>
+        <div class="dropdown-content">
+          <a href="#">New...</a>
+          <a href="#">Open Saved Battle</a>
+          <a href="#">Save Current Battle </a>
+        </div>
+      </div>
+    </tr>
+  </table>
+  
+  <div id="shipDesigner" style="display:none;">
+    <div class="dropdown">
+      <button class="dropbtn">Select Blueprint</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="addBlueprint('Terran_Interceptor')">Terran Interceptor</a>
+        <a href="#" onclick="addBlueprint('Terran_Cruiser')">Terran Cruiser</a>
+        <a href="#" onclick="addBlueprint('Terran_Dreadnought')">Terran Dreadnought </a>
+        <a href="#" onclick="addBlueprint('Terran_Starbase')">Terran Starbase </a>
+      </div>
+    </div>
+    <div id="shipBlueprintDiv">
 
+    </div>
+
+  </div>
+
+  <!--
   <form method="post" action="/index">
 
-    <input type="submit" value="add_ship" name="Add Ship"/>
+    
     <input type="submit" value="run_sim" name="Run Simulation!" />
 
+
   </form>
+
+  <input type="submit" value="add_ship" name="Add Ship" onclick="addImage()"/>
+  -->
   {% for message in get_flashed_messages() %}
     <div class="flash">{{ message }}</div>
   {% endfor %}
