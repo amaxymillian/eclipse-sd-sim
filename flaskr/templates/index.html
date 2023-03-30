@@ -58,7 +58,39 @@
   </style>
   
   <script>
-  function addBlueprint(blueprintName) {
+  var blueprintDrawSemaphore = false;
+
+  function selectBlueprint(blueprintName) {
+    const shipBlueprintCanvas = document.getElementById('shipBlueprintCanvas');
+    const width = shipBlueprintCanvas.width;
+    const height = shipBlueprintCanvas.height;
+
+    const context = shipBlueprintCanvas.getContext('2d');
+
+    // Reset our canvas before drawing the new blueprint
+    context.clearRect(0, 0, shipBlueprintCanvas.width, shipBlueprintCanvas.height)
+
+    //Load new image only if the semaphore is up, update the canvas side, and paint.
+    if (!blueprintDrawSemaphore) {
+      const shipBluePrintLoadingDiv = document.getElementById("shipBluePrintLoadingDiv");
+      //shipDesigner.removeAttribute("hidden");
+      shipBluePrintLoadingDiv.style.display = "block";
+      
+      const image = new Image();
+      image.src = '/static/images/blueprints/' + blueprintName + '.png'; 
+
+      shipBlueprintCanvas.width = image.width;
+      shipBlueprintCanvas.height = image.height;
+      image.onload = function() {
+        let shipBlueprintCanvas = document.getElementById('shipBlueprintCanvas');
+        let context = shipBlueprintCanvas.getContext('2d');
+        context.drawImage(image, 0, 0, image.width, image.height);
+        let shipBluePrintLoadingDiv = document.getElementById("shipBluePrintLoadingDiv");
+        shipBluePrintLoadingDiv.style.display = "none";
+      }
+    }
+
+    /*
     img = document.getElementById("blueprintImg")
     if(img == null) {
       img = document.createElement("img");
@@ -82,9 +114,9 @@
       default:
         console.log(`Error, unrecognized blueprintName ${blueprintName}!`);
         break;
-
-    }
     
+    }
+    */
     //document.body.appendChild(img);
     
   }
@@ -105,25 +137,26 @@
     var context = shipBlueprintCanvas.getContext('2d');
 
     // Load image as new each time?
+    /*
     const image = new Image();
     image.src = '/static/images/parts/' + partName + '.png'; 
 
     context.drawImage(image, 0, 0, width, height);
-
+    */
     //Create banding boxes for all squares (target locations for part) on this ship
     //TODO: check to see if part fitting would be allowed - this would require python calls to our py code
     // or building javascript functions that can calculate power requirements / drive requirements/ etc.
-    tracking.Fast.THRESHOLD = 50;
-    context.drawImage(image, 0, 0, width, height);
+    tracking.Fast.THRESHOLD = 100;
+    //context.drawImage(image, 0, 0, width, height);
 
-        var imageData = context.getImageData(0, 0, width, height);
-        var gray = tracking.Image.grayscale(imageData.data, width, height);
-        var corners = tracking.Fast.findCorners(gray, width, height);
+    var imageData = context.getImageData(0, 0, width, height);
+    var gray = tracking.Image.grayscale(imageData.data, width, height);
+    var corners = tracking.Fast.findCorners(gray, width, height);
 
-        for (var i = 0; i < corners.length; i += 2) {
-          context.fillStyle = '#f00';
-          context.fillRect(corners[i], corners[i + 1], 3, 3);
-        }    
+    for (var i = 0; i < corners.length; i += 2) {
+      context.fillStyle = '#f00';
+      context.fillRect(corners[i], corners[i + 1], 3, 3);
+    }    
 
 
 
@@ -171,16 +204,17 @@
     <div class="dropdown">
       <button class="dropbtn">Select Blueprint</button>
       <div class="dropdown-content">
-        <a href="#" onclick="addBlueprint('Terran_Interceptor')">Terran Interceptor</a>
-        <a href="#" onclick="addBlueprint('Terran_Cruiser')">Terran Cruiser</a>
-        <a href="#" onclick="addBlueprint('Terran_Dreadnought')">Terran Dreadnought </a>
-        <a href="#" onclick="addBlueprint('Terran_Starbase')">Terran Starbase </a>
+        <a href="#" onclick="selectBlueprint('Terran_Interceptor')">Terran Interceptor</a>
+        <a href="#" onclick="selectBlueprint('Terran_Cruiser')">Terran Cruiser</a>
+        <a href="#" onclick="selectBlueprint('Terran_Dreadnought')">Terran Dreadnought </a>
+        <a href="#" onclick="selectBlueprint('Terran_Starbase')">Terran Starbase </a>
       </div>
     </div>
     <table>
       <tr>
+        <div id ="shipBluePrintLoadingDiv" style="display:none;">Loading...</div>
         <div id="shipBlueprintDiv">
-          <canvas id="shipBlueprintCanvas" width="500" height="300"></canvas>
+          <canvas id="shipBlueprintCanvas" width="0" height="0"></canvas>
         </div>
       </tr>
       <tr>
