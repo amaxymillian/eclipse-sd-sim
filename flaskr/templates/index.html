@@ -4,7 +4,7 @@
 
 <head>
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
-
+  <script src="../static/scripts/tracking-min.js"></script>
   <style>
   /* Appropriated from: https://www.w3schools.com/css/css_dropdowns.asp 
   ... this seems to only work internally */
@@ -96,6 +96,39 @@
     shipDesigner.style.display = "block";
   }
 
+  function addPartToShip(partName) {
+    //Create a highlightable area of the canvas and write the name of the part as a hidden tag
+    var shipBlueprintCanvas = document.getElementById('shipBlueprintCanvas');
+    var width = shipBlueprintCanvas.width;
+    var height = shipBlueprintCanvas.height;
+
+    var context = shipBlueprintCanvas.getContext('2d');
+
+    // Load image as new each time?
+    const image = new Image();
+    image.src = '/static/images/parts/' + partName + '.png'; 
+
+    context.drawImage(image, 0, 0, width, height);
+
+    //Create banding boxes for all squares (target locations for part) on this ship
+    //TODO: check to see if part fitting would be allowed - this would require python calls to our py code
+    // or building javascript functions that can calculate power requirements / drive requirements/ etc.
+    tracking.Fast.THRESHOLD = 50;
+    context.drawImage(image, 0, 0, width, height);
+
+        var imageData = context.getImageData(0, 0, width, height);
+        var gray = tracking.Image.grayscale(imageData.data, width, height);
+        var corners = tracking.Fast.findCorners(gray, width, height);
+
+        for (var i = 0; i < corners.length; i += 2) {
+          context.fillStyle = '#f00';
+          context.fillRect(corners[i], corners[i + 1], 3, 3);
+        }    
+
+
+
+  }
+
   </script>
 </head>
 <!--
@@ -147,6 +180,8 @@
     <table>
       <tr>
         <div id="shipBlueprintDiv">
+          <canvas id="shipBlueprintCanvas" width="500" height="300"></canvas>
+        </div>
       </tr>
       <tr>
         <td>
@@ -155,7 +190,7 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Ion_Cannon.png"></td>
+                  <td><img src="/static/images/parts/Ion_Cannon.png" onclick="addPartToShip('Ion_Cannon')"></td>
                   <td><img src="/static/images/parts/Plasma_Cannon.png"></td>
                 </tr>
                 <tr>
