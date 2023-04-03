@@ -124,6 +124,11 @@ html {
     min-height: 12em;
     resize: vertical;
   }
+
+  .canvas {
+    height: 95%;
+    width: 95%;
+  }
   
   input.danger {
     color: #cc2f2e;
