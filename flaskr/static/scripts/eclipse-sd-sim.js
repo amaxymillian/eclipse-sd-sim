@@ -3,6 +3,29 @@
 //No global variable needed?
 var blueprintDrawSemaphore = false;
 
+const SEARCH_WIDTH = .01; // As a percentage of canvas, how wide to search for banding boxes
+
+
+
+class Ship {
+    constructor(shipType) {
+        this.shipType = shipType;
+        this.parts = [];
+    }
+
+    get shipType() {
+        return this.shipType;
+    }
+
+    set shipType(newShipType) {
+        this.shipType = newShipType;
+    }
+
+
+
+}
+
+
 function selectBlueprint(blueprintName) {
   const shipBlueprintCanvas = document.getElementById('shipBlueprintCanvas');
   const width = shipBlueprintCanvas.width;
@@ -34,23 +57,51 @@ function selectBlueprint(blueprintName) {
   }  
 }
 
-function getWhitePixelLength(checkHoriz, data, x, y, width, height) {
+const SearchDirection = {
+    Right: Symbol("right"),
+    Left: Symbol("left"),
+    Up: Symbol("up"),
+    Down: Symbol("down")
+};
+
+function getWhitePixelLength(direction, imageData, x, y) {
+    data = imageData.data;
+    width = imageData.width;
+    height = imageData.height;
+    
     //data is an Uint8ClampedArray object
     let count = 0
-    let i = (y*Math.trunc(width)+x)*4;
-    if(checkHoriz) {
-        while(data[i+4] > 220 && data[i+5] > 220 && data[i+6] > 220) {
-            count+=1
-            i+=4
+    let i = (y*width+x)*4;
+    switch(direction) {
+    case SearchDirection.Right:
+        while(data[i+4] > 200 && data[i+5] > 200 && data[i+6] > 200) {
+            //Need to check for perpendicular white lines which could indicate we're a subset square
+            count+=1;
+            i+=4;
         }
-    }
-    else {
-        while(data[i+Math.trunc(width * 4)] > 220 && 
-        data[i+Math.trunc(width * 4) + 1] > 220 && 
-        data[i+Math.trunc(width * 4) + 2] > 220) {
-            count+=1
-            i+=Math.trunc(width * 4)
+        break;
+    case SearchDirection.Left:
+        while(i >= 4 && data[i-4] > 200 && data[i-3] > 200 && data[i-2] > 200) {
+            count+=1;
+            i-=4;
         }
+        break;
+    case SearchDirection.Down:
+        while(data[i+width * 4] > 200 && 
+        data[i+Math.trunc(width * 4) + 1] > 200 && 
+        data[i+Math.trunc(width * 4) + 2] > 200) {
+            count+=1;
+            i+=Math.trunc(width * 4);
+        }
+        break;
+    case SearchDirection.Up:
+        while(i-width * 4 >= 0 && data[i-width * 4] > 200 && 
+        data[i-Math.trunc(width * 4) + 1] > 200 && 
+        data[i-Math.trunc(width * 4) + 2] > 200) {
+            count+=1;
+            i-=Math.trunc(width * 4);
+        }
+        break;
     }
     return count
 }
@@ -59,11 +110,16 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
     // Examine the blueprint canvas pixel by pixel to identify the upper right and lower left corners of all
     // the part outlines in the canvas.  They're white boxes with blue through to grey pixels adjecent.
     // There's probably a library out there that does this already...?
-    const { width, height } = shipBlueprintCanvas.getBoundingClientRect();
+    let { width, height } = shipBlueprintCanvas.getBoundingClientRect(); //These can/will be floats
     const imageData = context.getImageData(0, 0, width, height);
     const data = imageData.data;
 
-    
+    //Redefine width/height to be the actual width/height of the image data grabbed as this should(?) 
+    //be an int value...
+    width = imageData.width;
+    height = imageData.height;
+    //console.log("imageData width: " + width + ", height: " + height);
+
     // For debugging - uncomment this to log to console the pixel at the cursor position.  Slightly funky
     // in execution (I think...) due to pixel antialiasing performed by dynamically resized canvases.
     shipBlueprintCanvas.addEventListener( 'mousemove', event => {
@@ -88,48 +144,51 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
     
 
     // Iterate over pixels.  color data is in RGB format.
-    //The top 18% of the canvas can never contain a candidate square, avoid this
-    let maxTracker = -999;
-    for (let y = Math.trunc(height*.18); y < height; y += 1) {
+    //The top 15% of the canvas can never contain a candidate square, avoid this
+    for (let y = Math.trunc(height*.15); y < height; y += 1) {
         
         for (let x = 0; x < width; x += 1) {
             
             //height and width can be floating values as the webpage is resized
-            let i = (y*Math.trunc(width)+x)*4;
+            let i = (y*width+x)*4;
             let pixelR = data[i];
             let pixelG = data[i+1];
             let pixelB = data[i+2];
             let pixelA = data[i+3] / 255;
             
-            if(pixelR > 220 && pixelG > 220 && pixelB > 220) {
+            if(pixelR > 200 && pixelG > 200 && pixelB > 200) {
                 //console.log("-> Pixel (" + x + "," + y + "): (" + pixelR + "," + pixelG + "," + pixelB + ")");
 
                 //If the pixel 25% of the width of this canvas to the right of this pixel is a candidate pixel, 
-                //and 20% of the height of this canvas below is ALSO a candidate pixel
+                //and 10% of the height of this canvas below is ALSO a candidate pixel
                 //color *this* pixel green
                 if(data[i+Math.trunc(width * .25 * 4)] > 220 && 
                     data[i+Math.trunc(width * .25 * 4) + 1] > 220 && 
                     data[i+Math.trunc(width * .25 * 4) + 2] > 220 &&
-                    data[i+Math.trunc((height * .20) * width * 4)] &&
-                    data[i+Math.trunc((height * .20) * width * 4) + 1] &&
-                    data[i+Math.trunc((height * .20) * width * 4) + 2]){
+                    data[i+Math.trunc((height * .10) * width * 4)] &&
+                    data[i+Math.trunc((height * .10) * width * 4) + 1] &&
+                    data[i+Math.trunc((height * .10) * width * 4) + 2] ){
 
                     // Get the length of white pixels to the right and below from this point to check for a rect
-                    let horizLength = getWhitePixelLength(true, data, x, y, width, height);
-                    let vertLength = getWhitePixelLength(false, data, x, y, width, height);
-                    console.log("pixel (" + x + "," + y + ") has horiz,vert length of: " + horizLength + ", " +
-                                vertLength);
-                    if(maxTracker < (horizLength + vertLength)) {
-                        maxTracker = horizLength + vertLength;
-                    }
+                    let horizLength = getWhitePixelLength(SearchDirection.Right, imageData, x, y);
+                    let vertLength = getWhitePixelLength(SearchDirection.Down, imageData, x, y);
 
-                    //if(horizLength > 10 && vertLength > 10 && horizLength == vertLength) {
+                    if(horizLength > (width * .1) && vertLength > (height * .1) ) {
                         //candidate corner
-                    data[i] = 0;
-                    data[i+1] = 255;
-                    data[i+2] = 0;
-                    data[i+3] = 255;
-                    //}
+                        
+                        //Check if we're a square
+                        bottomLength = getWhitePixelLength(SearchDirection.Right, imageData, x, y+vertLength);
+                        rightLength = getWhitePixelLength(SearchDirection.Down, imageData, x+horizLength, y);
+
+                        console.log("candidate corner (" + x + "," + y + ") has horiz,vert length of: " 
+                                        + horizLength + ", " + vertLength + " and bottom,right length of: "
+                                        + bottomLength + ", " + rightLength);
+                        
+                        data[i] = 0;
+                        data[i+1] = 255;
+                        data[i+2] = 0;
+                        data[i+3] = 255;
+                    }
                 }
                 else {
                     data[i] = 255;
@@ -143,7 +202,6 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
         }
         
     }
-    console.log("Max of horiz+vert was: " + maxTracker);
     const outputData = context.putImageData(imageData, 0, 0);
 
     /*
