@@ -97,11 +97,34 @@
   <div id="shipDesigner" style="display:none;">
     <div class="dropdown">
       <button class="dropbtn">Select Blueprint</button>
-      <div class="dropdown-content">
-        <a href="#" onclick="selectBlueprint('Terran_Interceptor')">Terran Interceptor</a>
-        <a href="#" onclick="selectBlueprint('Terran_Cruiser')">Terran Cruiser</a>
-        <a href="#" onclick="selectBlueprint('Terran_Dreadnought')">Terran Dreadnought </a>
-        <a href="#" onclick="selectBlueprint('Terran_Starbase')">Terran Starbase </a>
+      <div class="dropdown-content" style="padding: 0px 0px; min-width: 320px;">
+        <table>
+          <tr>
+            <td><img src="/static/images/blueprints/Terran_Interceptor.png" height="100%" width = "100%" onclick="selectBlueprint('Terran_Interceptor')" title="Terran Interceptor" /></td>
+            <td><img src="/static/images/blueprints/Terran_Cruiser.png" height="100%" width = "100%" onclick="selectBlueprint('Terran_Cruiser')" title="Terran Cruiser" /></td>
+            <td><img src="/static/images/blueprints/Terran_Dreadnought.png" height="100%" width = "100%" onclick="selectBlueprint('Terran_Dreadnought')" title="Terran Dreadnought" /></td>
+            <td><img src="/static/images/blueprints/Terran_Starbase.png" height="100%" width = "100%" onclick="selectBlueprint('Terran_Starbase')" title="Terran Starbase" /></td>
+          </tr>
+          <tr>
+            <td><img src="/static/images/blueprints/Eridani_Interceptor.png" height="100%" width = "100%" onclick="selectBlueprint('Eridani_Interceptor')" title="Eridani Interceptor" /></td>
+            <td><img src="/static/images/blueprints/Eridani_Cruiser.png" height="100%" width = "100%" onclick="selectBlueprint('Eridani_Cruiser')" title="Eridani Cruiser" /></td>
+            <td><img src="/static/images/blueprints/Eridani_Dreadnought.png" height="100%" width = "100%" onclick="selectBlueprint('Eridani_Dreadnought')" title="Eridani Dreadnought" /></td>
+            <td><img src="/static/images/blueprints/Eridani_Starbase.png" height="100%" width = "100%" onclick="selectBlueprint('Eridani_Starbase')" title="Eridani Starbase" /></td>
+          </tr>
+          <tr>
+            <td><img src="/static/images/blueprints/Orion_Interceptor.png" height="100%" width = "100%" onclick="selectBlueprint('Orion_Interceptor')" title="Orion Interceptor" /></td>
+            <td><img src="/static/images/blueprints/Orion_Cruiser.png" height="100%" width = "100%" onclick="selectBlueprint('Orion_Cruiser')" title="Orion Cruiser" /></td>
+            <td><img src="/static/images/blueprints/Orion_Dreadnought.png" height="100%" width = "100%" onclick="selectBlueprint('Orion_Dreadnought')" title="Orion Dreadnought" /></td>
+            <td><img src="/static/images/blueprints/Orion_Starbase.png" height="100%" width = "100%" onclick="selectBlueprint('Orion_Starbase')" title="Orion Starbase" /></td>
+          </tr>
+          <tr>
+            <td><img src="/static/images/blueprints/Planta_Interceptor.png" height="100%" width = "100%" onclick="selectBlueprint('Planta_Interceptor')" title="Planta Interceptor" /></td>
+            <td><img src="/static/images/blueprints/Planta_Cruiser.png" height="100%" width = "100%" onclick="selectBlueprint('Planta_Cruiser')" title="Planta Cruiser" /></td>
+            <td><img src="/static/images/blueprints/Planta_Dreadnought.png" height="100%" width = "100%" onclick="selectBlueprint('Planta_Dreadnought')" title="Planta Dreadnought" /></td>
+            <td><img src="/static/images/blueprints/Planta_Starbase.png" height="100%" width = "100%" onclick="selectBlueprint('Planta_Starbase')" title="Planta Starbase" /></td>
+          </tr>
+
+      </table>
       </div>
     </div>
     <table>
@@ -119,11 +142,12 @@
               <table>
                 <tr>
                   <td><img src="/static/images/parts/Ion_Cannon.png" onclick="addPartToShip('Ion_Cannon')"></td>
-                  <td><img src="/static/images/parts/Plasma_Cannon.png"></td>
+                  <td><img src="/static/images/parts/Plasma_Cannon.png" onclick="addPartToShip('Plasma_Cannon')"></td>
+                  <td><img src="/static/images/parts/Soliton_Cannon.png" onclick="addPartToShip('Soliton_Cannon')"></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Soliton_Cannon.png"></td>
-                  <td><img src="/static/images/parts/Antimatter_Cannon.png"></td>
+                  <td><img src="/static/images/parts/Antimatter_Cannon.png" onclick="addPartToShip('Antimatter_Cannon')"></td>
+                  <td><img src="/static/images/parts/Rift_Cannon.png" onclick="addPartToShip('Rift_Cannon')"></td>
                 </tr>
               </table>
             </div>
@@ -135,11 +159,48 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Electron_Computer.png"></td>
-                  <td><img src="/static/images/parts/Positron_Computer.png"></td>
+                  <td><img src="/static/images/parts/Electron_Computer.png" onclick="addPartToShip('Electron_Computer')"></td>
+                  <td><img src="/static/images/parts/Positron_Computer.png" onclick="addPartToShip('Positron_Computer')"></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Gluon_Computer.png"></td>
+                  <td><img src="/static/images/parts/Gluon_Computer.png" onclick="addPartToShip('Gluon_Computer')"></td>
+                  <td><img src="/static/images/parts/Axion_Computer.png" onclick="addPartToShip('Axion_Computer')"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="dropdown">
+            <button class="dropbtn">Hull</button>
+            <div class="dropdown-content">
+              <table>
+                <tr>
+                  <td><img src="/static/images/parts/Hull.png" onclick="addPartToShip('Hull')"></td>
+                  <td><img src="/static/images/parts/Improved_Hull.png" onclick="addPartToShip('Improved_Hull')"></td>
+                  <td><img src="/static/images/parts/Shard_Hull.png" onclick="addPartToShip('Shard_Hull')"></td>
+                </tr>
+                <tr>
+                  <td><img src="/static/images/parts/Sentient_Hull.png" onclick="addPartToShip('Sentient_Hull')"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="dropdown">
+            <button class="dropbtn">Shields</button>
+            <div class="dropdown-content">
+              <table>
+                <tr>
+                  <td><img src="/static/images/parts/Gauss_Shield.png" onclick="addPartToShip('Gauss_Shield')"></td>
+                  <td><img src="/static/images/parts/Phase_Shield.png" onclick="addPartToShip('Phase_Shield')"></td>
+                  <td><img src="/static/images/parts/Flux_Shield.png" onclick="addPartToShip('Flux_Shield')"></td>
+                </tr>
+                <tr>
+                  <td><img src="/static/images/parts/Absorption_Shield.png" onclick="addPartToShip('Absorption_Shield')"></td>
+                  <td><img src="/static/images/parts/Inversion_Shield.png" onclick="addPartToShip('Inversion_Shield')"></td>
+                  <td><img src="/static/images/parts/Morph_Shield.png" onclick="addPartToShip('Morph_Shield')"></td>
                 </tr>
               </table>
             </div>
@@ -149,6 +210,10 @@
     </table>
     </div>
 
+  </div>
+
+  <div id="battleSimulator" style="display:none;">
+  
   </div>
 
   <!--

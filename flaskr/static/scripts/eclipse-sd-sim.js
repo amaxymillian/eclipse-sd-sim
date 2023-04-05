@@ -1,7 +1,35 @@
 //Needs comment Header
 
+//Enums
+const SearchDirection = {
+    Right: Symbol("right"),
+    Left: Symbol("left"),
+    Up: Symbol("up"),
+    Down: Symbol("down")
+};
+
+const ShipType = {
+    TERRAN_INTERCEPTOR: "Terran_Interceptor",
+    TERRAN_CRUISER: "Terran_Cruiser",
+    TERRAN_DREADNOUGHT: "Terran_Dreadnought",
+    TERRAN_STARBASE: "Terran_Starbase",
+    ERIDANI_INTERCEPTOR: "Eridani_Interceptor",
+    ERIDANI_CRUISER: "Eridani_Cruiser",
+    ERIDANI_DREADNOUGHT: "Eridani_Dreadnought",
+    ERIDANI_STARBASE: "Eridani_Starbase",
+    ORION_INTERCEPTOR: "Orion_Interceptor",
+    ORION_CRUISER: "Orion_Cruiser",
+    ORION_DREADNOUGHT: "Orion_Dreadnought",
+    ORION_STARBASE: "Orion_Starbase",
+    PLANTA_INTERCEPTOR: "Planta_Interceptor",
+    PLANTA_CRUISER: "Planta_Cruiser",
+    PLANTA_DREADNOUGHT: "Planta_Dreadnought",
+    PLANTA_STARBASE: "Planta_Starbase"
+};
+
 //No global variable needed?
 var blueprintDrawSemaphore = false;
+var selectedShip = Ship()
 
 const SEARCH_WIDTH = .01; // As a percentage of canvas, how wide to search for banding boxes
 
@@ -37,32 +65,27 @@ function selectBlueprint(blueprintName) {
   context.clearRect(0, 0, shipBlueprintCanvas.width, shipBlueprintCanvas.height)
 
   //Load new image only if the semaphore is up, update the canvas side, and paint.
-  if (!blueprintDrawSemaphore) {
+  //if (!blueprintDrawSemaphore) {
     const shipBluePrintLoadingDiv = document.getElementById("shipBluePrintLoadingDiv");
     //shipDesigner.removeAttribute("hidden");
     shipBluePrintLoadingDiv.style.display = "block";
-    
+
     const image = new Image();
     image.src = '/static/images/blueprints/' + blueprintName + '.png'; 
 
     shipBlueprintCanvas.width = image.width;
     shipBlueprintCanvas.height = image.height;
     image.onload = function() {
-      let shipBlueprintCanvas = document.getElementById('shipBlueprintCanvas');
-      let context = shipBlueprintCanvas.getContext('2d');
-      context.drawImage(image, 0, 0, image.width, image.height);
-      let shipBluePrintLoadingDiv = document.getElementById("shipBluePrintLoadingDiv");
-      shipBluePrintLoadingDiv.style.display = "none";
+        let shipBlueprintCanvas = document.getElementById('shipBlueprintCanvas');
+        let context = shipBlueprintCanvas.getContext('2d');
+        context.drawImage(image, 0, 0, image.width, image.height);
+        let shipBluePrintLoadingDiv = document.getElementById("shipBluePrintLoadingDiv");
+        shipBluePrintLoadingDiv.style.display = "none";
     }
-  }  
+  //}  
 }
 
-const SearchDirection = {
-    Right: Symbol("right"),
-    Left: Symbol("left"),
-    Up: Symbol("up"),
-    Down: Symbol("down")
-};
+
 
 function getWhitePixelLength(direction, imageData, x, y) {
     data = imageData.data;

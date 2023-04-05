@@ -22,10 +22,22 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 class Ship_type(IntEnum):
-    INTERCEPTOR = 1
-    CRUISER = 2
-    DREADNOUGHT = 3
-    STARBASE = 4
+    TERRAN_INTERCEPTOR = 1
+    TERRAN_CRUISER = 2
+    TERRAN_DREADNOUGHT = 3
+    TERRAN_STARBASE = 4
+    ERIDANI_INTERCEPTOR = 5
+    ERIDANI_CRUISER = 6
+    ERIDANI_DREADNOUGHT = 7
+    ERIDANI_STARBASE = 8
+    ORION_INTERCEPTOR = 9
+    ORION_CRUISER = 10
+    ORION_DREADNOUGHT = 11
+    ORION_STARBASE = 12
+    PLANTA_INTERCEPTOR = 13
+    PLANTA_CRUISER = 14
+    PLANTA_DREADNOUGHT = 15
+    PLANTA_STARBASE = 16
     
 class Ship_part_names(IntEnum):
     ABSORPTION_SHIELD = 1
@@ -58,21 +70,21 @@ class Ship_part_names(IntEnum):
     
 # Need a data structure to represent ship configurations
 ship_types = {
-    Ship_type.INTERCEPTOR: 
+    Ship_type.TERRAN_INTERCEPTOR: 
     {"slots":4, "base_initiative":2, 
     "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE, None]},
     
-    Ship_type.CRUISER: 
+    Ship_type.TERRAN_CRUISER: 
     {"slots":6, "base_initiative":1, 
     "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
     Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, None]},
     
-    Ship_type.DREADNOUGHT: 
+    Ship_type.TERRAN_DREADNOUGHT: 
     {"slots":8, "base_initiative":0, 
     "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
     Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, None]},
 
-    Ship_type.STARBASE: 
+    Ship_type.TERRAN_STARBASE: 
     {"slots":5, "base_initiative":4, 
     "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, None]}
 
@@ -564,10 +576,10 @@ class Battle_sim:
                 self._df.loc[result_arr, 'Raw Count'] += 1
             else:
                 new_row = pd.DataFrame([{'Result': result_arr,  'Winning Player': self.get_surviving_ships()[0].player_num, 
-                                         'Surviving Intr': self.get_surviving_ships(Ship_type.INTERCEPTOR), 
-                                         'Surviving Crus': self.get_surviving_ships(Ship_type.CRUISER),
-                                         'Surviving Dred': self.get_surviving_ships(Ship_type.DREADNOUGHT),
-                                         'Surviving Strb': self.get_surviving_ships(Ship_type.STARBASE),
+                                         'Surviving Intr': self.get_surviving_ships(Ship_type.TERRAN_INTERCEPTOR), 
+                                         'Surviving Crus': self.get_surviving_ships(Ship_type.TERRAN_CRUISER),
+                                         'Surviving Dred': self.get_surviving_ships(Ship_type.TERRAN_DREADNOUGHT),
+                                         'Surviving Strb': self.get_surviving_ships(Ship_type.TERRAN_STARBASE),
                                          'Raw Count': 1, 'Percentage': 0}])
                 new_row = new_row.set_index('Result')
                 self._df = pd.concat([self._df, new_row])
@@ -707,10 +719,10 @@ class Battle_sim:
 # probabilities of winning/losing
 
 def main():
-    test_ship = Ship(Ship_type.INTERCEPTOR, 1, is_attacker = False)
-    test_ship_b = Ship(Ship_type.INTERCEPTOR, 1, is_attacker = False)
+    test_ship = Ship(Ship_type.TERRAN_INTERCEPTOR, 1, is_attacker = False)
+    test_ship_b = Ship(Ship_type.TERRAN_INTERCEPTOR, 1, is_attacker = False)
     #print(test_ship)
-    test_ship_2 = Ship(Ship_type.DREADNOUGHT, 2)
+    test_ship_2 = Ship(Ship_type.TERRAN_DREADNOUGHT, 2)
 
 
     test_ship_2.add_part(Ship_part_names.NUCLEAR_DRIVE, 3)
