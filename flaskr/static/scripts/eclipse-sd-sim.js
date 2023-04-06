@@ -27,14 +27,8 @@ const ShipType = {
     PLANTA_STARBASE: "Planta_Starbase"
 };
 
-//No global variable needed?
-var blueprintDrawSemaphore = false;
-var selectedShip = Ship()
-
 const SEARCH_WIDTH = .01; // As a percentage of canvas, how wide to search for banding boxes
-
-
-
+/*
 class Ship {
     constructor(shipType) {
         this.shipType = shipType;
@@ -52,6 +46,11 @@ class Ship {
 
 
 }
+var selectedShip = new Ship()
+*/
+
+//No global variable needed?
+var blueprintDrawSemaphore = false;
 
 
 function selectBlueprint(blueprintName) {
@@ -247,12 +246,23 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
 
 }
 
-function showShipDesigner() {
-  //alert("clicked!");
+function showPrimaryDiv(divToShow) {
   const shipDesigner = document.getElementById("shipDesigner");
+  const battleSimulator = document.getElementById("battleSimulator");
   //shipDesigner.removeAttribute("hidden");
-  shipDesigner.style.display = "block";
+  switch(divToShow){
+    case "shipDesigner":
+        shipDesigner.style.display = "block";
+        battleSimulator.style.display = "none";
+        break;
+    case "battleSimulator":
+        shipDesigner.style.display = "none";
+        battleSimulator.style.display = "block";
+        break;
+  }
+  
 }
+
 
 function addPartToShip(partName) {
   //Create a highlightable area of the canvas and write the name of the part as a hidden tag

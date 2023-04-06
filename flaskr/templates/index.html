@@ -76,7 +76,7 @@
       <div class="dropdown">
         <button class="dropbtn">Ship Designer</button>
         <div class="dropdown-content">
-          <a href="#" onclick="showShipDesigner()">New...</a>
+          <a href="#" onclick="showPrimaryDiv('shipDesigner')">New...</a>
           <a href="#">Open Saved Ship</a>
           <a href="#">Save Current Ship </a>
         </div>
@@ -86,7 +86,7 @@
       <div class="dropdown">
         <button class="dropbtn">Battle Simulator</button>
         <div class="dropdown-content">
-          <a href="#">New...</a>
+          <a href="#" onclick="showPrimaryDiv('battleSimulator')">New...</a>
           <a href="#">Open Saved Battle</a>
           <a href="#">Save Current Battle </a>
         </div>
@@ -142,12 +142,17 @@
               <table>
                 <tr>
                   <td><img src="/static/images/parts/Ion_Cannon.png" onclick="addPartToShip('Ion_Cannon')"></td>
+                  <td><img src="/static/images/parts/Ion_Disruptor.png" onclick="addPartToShip('Ion_Disruptor')"></td>
+                  <td><img src="/static/images/parts/Ion_Turret.png" onclick="addPartToShip('Ion_Turret')"></td>
                   <td><img src="/static/images/parts/Plasma_Cannon.png" onclick="addPartToShip('Plasma_Cannon')"></td>
-                  <td><img src="/static/images/parts/Soliton_Cannon.png" onclick="addPartToShip('Soliton_Cannon')"></td>
+                  <td><img src="/static/images/parts/Plasma_Turret.png" onclick="addPartToShip('Plasma_Turret')"></td>
                 </tr>
                 <tr>
+                  <td><img src="/static/images/parts/Soliton_Cannon.png" onclick="addPartToShip('Soliton_Cannon')"></td>
+                  <td><img src="/static/images/parts/Soliton_Charger.png" onclick="addPartToShip('Soliton_Charger')"></td>
                   <td><img src="/static/images/parts/Antimatter_Cannon.png" onclick="addPartToShip('Antimatter_Cannon')"></td>
                   <td><img src="/static/images/parts/Rift_Cannon.png" onclick="addPartToShip('Rift_Cannon')"></td>
+                  <td><img src="/static/images/parts/Rift_Conductor.png" onclick="addPartToShip('Rift_Conductor')"></td>
                 </tr>
               </table>
             </div>
@@ -172,6 +177,26 @@
         </td>
         <td>
           <div class="dropdown">
+            <button class="dropbtn">Drives</button>
+            <div class="dropdown-content">
+              <table>
+                <tr>
+                  <td><img src="/static/images/parts/Nuclear_Drive.png" onclick="addPartToShip('Nuclear_Drive')"></td>
+                  <td><img src="/static/images/parts/Fusion_Drive.png" onclick="addPartToShip('Fusion_Drive')"></td>
+                  <td><img src="/static/images/parts/Tachyon_Drive.png" onclick="addPartToShip('Tachyon_Drive')"></td>
+                  <td><img src="/static/images/parts/Transition_Drive.png" onclick="addPartToShip('Transition_Drive')"></td>
+                </tr>
+                <tr>
+                  <td><img src="/static/images/parts/Conformal_Drive.png" onclick="addPartToShip('Conformal_Drive')"></td>
+                  <td><img src="/static/images/parts/Nonlinear_Drive.png" onclick="addPartToShip('Nonlinear_Drive')"></td>
+                  <td><img src="/static/images/parts/Jump_Drive.png" onclick="addPartToShip('Jump_Drive')"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="dropdown">
             <button class="dropbtn">Hull</button>
             <div class="dropdown-content">
               <table>
@@ -182,6 +207,25 @@
                 </tr>
                 <tr>
                   <td><img src="/static/images/parts/Sentient_Hull.png" onclick="addPartToShip('Sentient_Hull')"></td>
+                  <td><img src="/static/images/parts/Conifold_Field.png" onclick="addPartToShip('Conifold_Field')"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="dropdown">
+            <button class="dropbtn">Missiles</button>
+            <div class="dropdown-content">
+              <table>
+                <tr>
+                  <td><img src="/static/images/parts/Flux_Missile.png" onclick="addPartToShip('Flux_Missile')"></td>
+                  <td><img src="/static/images/parts/Plasma_Missile.png" onclick="addPartToShip('Plasma_Missile')"></td>
+                  <td><img src="/static/images/parts/Soliton_Missile.png" onclick="addPartToShip('Soliton_Missile')"></td>
+                </tr>
+                <tr>
+                  <td><img src="/static/images/parts/Ion_Missile.png" onclick="addPartToShip('Ion_Missile')"></td>
+                  <td><img src="/static/images/parts/Antimatter_Missile.png" onclick="addPartToShip('Antimatter_Missile')"></td>
                 </tr>
               </table>
             </div>
@@ -201,6 +245,25 @@
                   <td><img src="/static/images/parts/Absorption_Shield.png" onclick="addPartToShip('Absorption_Shield')"></td>
                   <td><img src="/static/images/parts/Inversion_Shield.png" onclick="addPartToShip('Inversion_Shield')"></td>
                   <td><img src="/static/images/parts/Morph_Shield.png" onclick="addPartToShip('Morph_Shield')"></td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </td>
+        <td>
+          <div class="dropdown">
+            <button class="dropbtn">Sources</button>
+            <div class="dropdown-content">
+              <table>
+                <tr>
+                  <td><img src="/static/images/parts/Nuclear_Source.png" onclick="addPartToShip('Nuclear_Source')"></td>
+                  <td><img src="/static/images/parts/Fusion_Source.png" onclick="addPartToShip('Fusion_Source')"></td>
+                  <td><img src="/static/images/parts/Tachyon_Source.png" onclick="addPartToShip('Tachyon_Source')"></td>
+                </tr>
+                <tr>
+                  <td><img src="/static/images/parts/Zero-Point_Source.png" onclick="addPartToShip('Zero-Point_Source')"></td>
+                  <td><img src="/static/images/parts/Muon_Source.png" onclick="addPartToShip('Muon_Source')"></td>
+                  <td><img src="/static/images/parts/Hypergrid_Source.png" onclick="addPartToShip('Hypergrid_Source')"></td>
                 </tr>
               </table>
             </div>
