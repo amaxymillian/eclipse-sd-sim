@@ -28,6 +28,7 @@ const ShipType = {
 };
 
 const SEARCH_WIDTH = .01; // As a percentage of canvas, how wide to search for banding boxes
+const WHITE_SENSITIVITY = 150;  //RGB threshold for tracking a 'white' pixel
 /*
 class Ship {
     constructor(shipType) {
@@ -48,6 +49,15 @@ class Ship {
 }
 var selectedShip = new Ship()
 */
+
+class BoundingBox {
+    constructor(x, y, horizLength, vertLength) {
+        this.x = x;
+        this.y = y;
+        this.horizLength = horizLength;
+        this.vertLength = vertLength
+    }
+}
 
 //No global variable needed?
 var blueprintDrawSemaphore = false;
@@ -96,30 +106,52 @@ function getWhitePixelLength(direction, imageData, x, y) {
     let i = (y*width+x)*4;
     switch(direction) {
     case SearchDirection.Right:
-        while(data[i+4] > 200 && data[i+5] > 200 && data[i+6] > 200) {
+        while(data[i+4] > WHITE_SENSITIVITY && data[i+5] > WHITE_SENSITIVITY 
+            && data[i+6] > WHITE_SENSITIVITY) {
             //Need to check for perpendicular white lines which could indicate we're a subset square
+            if(getWhitePixelLength(SearchDirection.Up, imageData, i, y) >5 ||
+            getWhitePixelLength(SearchDirection.Down, imageData, i, y) >5 ) {
+                console.log('SearchDirection.Right, perpendicular white line found?');
+                return count
+            }
             count+=1;
             i+=4;
         }
         break;
     case SearchDirection.Left:
-        while(i >= 4 && data[i-4] > 200 && data[i-3] > 200 && data[i-2] > 200) {
+        while(i >= 4 && data[i-4] > WHITE_SENSITIVITY && data[i-3] > WHITE_SENSITIVITY 
+            && data[i-2] > WHITE_SENSITIVITY) {
+            if(getWhitePixelLength(SearchDirection.Up, imageData, i, y) > 5 ||
+            getWhitePixelLength(SearchDirection.Down, imageData, i, y) >5 ) {
+                console.log('SearchDirection.Left, perpendicular white line found?');
+                return count
+            }
             count+=1;
             i-=4;
         }
         break;
     case SearchDirection.Down:
-        while(data[i+width * 4] > 200 && 
-        data[i+Math.trunc(width * 4) + 1] > 200 && 
-        data[i+Math.trunc(width * 4) + 2] > 200) {
+        while(data[i+width * 4] > WHITE_SENSITIVITY && 
+        data[i+Math.trunc(width * 4) + 1] > WHITE_SENSITIVITY && 
+        data[i+Math.trunc(width * 4) + 2] > WHITE_SENSITIVITY) {
+            if(getWhitePixelLength(SearchDirection.Left, imageData, x, i) > 5 ||
+            getWhitePixelLength(SearchDirection.Right, imageData, x, i) >5 ) {
+                console.log('SearchDirection.Down, perpendicular white line found?');
+                return count
+            }
             count+=1;
             i+=Math.trunc(width * 4);
         }
         break;
     case SearchDirection.Up:
-        while(i-width * 4 >= 0 && data[i-width * 4] > 200 && 
-        data[i-Math.trunc(width * 4) + 1] > 200 && 
-        data[i-Math.trunc(width * 4) + 2] > 200) {
+        while(i-width * 4 >= 0 && data[i-width * 4] > WHITE_SENSITIVITY && 
+        data[i-Math.trunc(width * 4) + 1] > WHITE_SENSITIVITY && 
+        data[i-Math.trunc(width * 4) + 2] > WHITE_SENSITIVITY) {
+            if(getWhitePixelLength(SearchDirection.Left, imageData, x, i) > 5 ||
+            getWhitePixelLength(SearchDirection.Right, imageData, x, i) >5 ) {
+                console.log('SearchDirection.Down, perpendicular white line found?');
+                return count
+            }
             count+=1;
             i-=Math.trunc(width * 4);
         }
@@ -164,6 +196,8 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
       
     });
     
+    
+    let boundingBoxArray = [];
 
     // Iterate over pixels.  color data is in RGB format.
     //The top 15% of the canvas can never contain a candidate square, avoid this
@@ -178,15 +212,14 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
             let pixelB = data[i+2];
             let pixelA = data[i+3] / 255;
             
-            if(pixelR > 200 && pixelG > 200 && pixelB > 200) {
+            if(pixelR > WHITE_SENSITIVITY && pixelG > WHITE_SENSITIVITY && pixelB > WHITE_SENSITIVITY) {
                 //console.log("-> Pixel (" + x + "," + y + "): (" + pixelR + "," + pixelG + "," + pixelB + ")");
 
-                //If the pixel 25% of the width of this canvas to the right of this pixel is a candidate pixel, 
+                //If the pixel 20% of the width of this canvas to the right of this pixel is a candidate pixel, 
                 //and 10% of the height of this canvas below is ALSO a candidate pixel
-                //color *this* pixel green
-                if(data[i+Math.trunc(width * .25 * 4)] > 220 && 
-                    data[i+Math.trunc(width * .25 * 4) + 1] > 220 && 
-                    data[i+Math.trunc(width * .25 * 4) + 2] > 220 &&
+                if(data[i+Math.trunc(width * .20 * 4)] > WHITE_SENSITIVITY && 
+                    data[i+Math.trunc(width * .20 * 4) + 1] > WHITE_SENSITIVITY && 
+                    data[i+Math.trunc(width * .20 * 4) + 2] > WHITE_SENSITIVITY &&
                     data[i+Math.trunc((height * .10) * width * 4)] &&
                     data[i+Math.trunc((height * .10) * width * 4) + 1] &&
                     data[i+Math.trunc((height * .10) * width * 4) + 2] ){
@@ -195,6 +228,9 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
                     let horizLength = getWhitePixelLength(SearchDirection.Right, imageData, x, y);
                     let vertLength = getWhitePixelLength(SearchDirection.Down, imageData, x, y);
 
+                    console.log("candidate corner (" + x + "," + y + ") has horiz,vert length of: " 
+                                        + horizLength + ", " + vertLength + ".");
+
                     if(horizLength > (width * .1) && vertLength > (height * .1) ) {
                         //candidate corner
                         
@@ -202,14 +238,23 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
                         bottomLength = getWhitePixelLength(SearchDirection.Right, imageData, x, y+vertLength);
                         rightLength = getWhitePixelLength(SearchDirection.Down, imageData, x+horizLength, y);
 
-                        console.log("candidate corner (" + x + "," + y + ") has horiz,vert length of: " 
-                                        + horizLength + ", " + vertLength + " and bottom,right length of: "
-                                        + bottomLength + ", " + rightLength);
+                        console.log("... and bottom,right length of: " + bottomLength + ", " + rightLength);
+
+                        if (Math.abs(horizLength - bottomLength) / horizLength < .1 && 
+                            Math.abs(vertLength - rightLength) / vertLength < .1 ) {
+                            /* This is a selection box, draw it to canvas and create it as a clickable region */
+                            console.log("Adding selection box at (" + x + "," + y + " of dimesions " 
+                            + horizLength + "," + vertLength)
+                            boundingBoxArray.push(new BoundingBox(x, y, horizLength, vertLength));
+                            
+                        }
+                        else {
                         
-                        data[i] = 0;
-                        data[i+1] = 255;
-                        data[i+2] = 0;
-                        data[i+3] = 255;
+                            data[i] = 0;
+                            data[i+1] = 255;
+                            data[i+2] = 0;
+                            data[i+3] = 255;
+                        }
                     }
                 }
                 else {
@@ -224,24 +269,22 @@ function getBluePrintPartBoundingBoxes(shipBlueprintCanvas, context) {
         }
         
     }
-    const outputData = context.putImageData(imageData, 0, 0);
+    //const outputData = context.putImageData(imageData, 0, 0);
 
-    /*
     //Create banding boxes for all squares (target locations for part) on this ship
     //TODO: check to see if part fitting would be allowed - this would require python calls to our py code
     // or building javascript functions that can calculate power requirements / drive requirements/ etc.
-    tracking.Fast.THRESHOLD = 100;
-    //context.drawImage(image, 0, 0, width, height);
-
-    //const imageData = context.getImageData(0, 0, width, height);
-    let gray = tracking.Image.grayscale(data, width, height);
-    let corners = tracking.Fast.findCorners(gray, Math.trunc(width), Math.trunc(height));
-
-    for (var i = 0; i < corners.length; i += 2) {
-        context.fillStyle = '#f00';
-        context.fillRect(corners[i], corners[i + 1], 3, 3);
-    } 
-    */   
+    rectContext = shipBlueprintCanvas.getContext("2d");
+    rectContext.strokeStyle = "blue";
+    rectContext.lineWidth = "6";
+    for(let i = 0; i < boundingBoxArray.length; i++) {
+        rectContext.beginPath();
+        rectContext.rect(boundingBoxArray[i].x, boundingBoxArray[i].y, 
+            boundingBoxArray[i].horizLength, boundingBoxArray[i].vertLength);
+        rectContext.stroke();
+    }
+    
+    
 
 
 }
