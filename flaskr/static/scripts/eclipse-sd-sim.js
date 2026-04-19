@@ -762,8 +762,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDropdownHandlers();
 });
 
-var DROPDOWN_CLOSE_DELAY = 400;
-
 function setupDropdownHandlers() {
     var dropdowns = document.querySelectorAll('.dropdown');
     dropdowns.forEach(function(dropdown) {
@@ -781,24 +779,12 @@ function setupDropdownHandlers() {
         }
 
         dropdown.addEventListener('mouseenter', function() {
-            var timeoutId = dropdown._closeTimeoutId;
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-                dropdown._closeTimeoutId = null;
-            }
+            closeAllDropdowns();
             dropdown.classList.add('open');
         });
 
         dropdown.addEventListener('mouseleave', function() {
-            var timeoutId = dropdown._closeTimeoutId;
-            if (timeoutId) {
-                clearTimeout(timeoutId);
-            }
-            timeoutId = setTimeout(function() {
-                dropdown.classList.remove('open');
-                dropdown._closeTimeoutId = null;
-            }, DROPDOWN_CLOSE_DELAY);
-            dropdown._closeTimeoutId = timeoutId;
+            dropdown.classList.remove('open');
         });
     });
 
@@ -827,11 +813,6 @@ function setupDropdownHandlers() {
 
 function closeAllDropdowns() {
     document.querySelectorAll('.dropdown.open').forEach(function(d) {
-        var timeoutId = d._closeTimeoutId;
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-            d._closeTimeoutId = null;
-        }
         d.classList.remove('open');
     });
 }
