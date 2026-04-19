@@ -514,6 +514,7 @@ function selectBlueprint(blueprintName) {
             ctx.drawImage(image, 0, 0);
 
             currentBlueprintName = blueprintName;
+            blueprintSlotBoxes[blueprintName] = [];
             detectBlueprintSlots(shipBlueprintCanvas, ctx, blueprintName);
 
             drawOverlay();
@@ -761,7 +762,6 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDropdownHandlers();
 });
 
-var dropdownCloseTimeout = null;
 var DROPDOWN_CLOSE_DELAY = 400;
 
 function setupDropdownHandlers() {
@@ -781,21 +781,24 @@ function setupDropdownHandlers() {
         }
 
         dropdown.addEventListener('mouseenter', function() {
-            if (dropdownCloseTimeout) {
-                clearTimeout(dropdownCloseTimeout);
-                dropdownCloseTimeout = null;
+            var timeoutId = dropdown._closeTimeoutId;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+                dropdown._closeTimeoutId = null;
             }
             dropdown.classList.add('open');
         });
 
         dropdown.addEventListener('mouseleave', function() {
-            if (dropdownCloseTimeout) {
-                clearTimeout(dropdownCloseTimeout);
+            var timeoutId = dropdown._closeTimeoutId;
+            if (timeoutId) {
+                clearTimeout(timeoutId);
             }
-            dropdownCloseTimeout = setTimeout(function() {
+            timeoutId = setTimeout(function() {
                 dropdown.classList.remove('open');
-                dropdownCloseTimeout = null;
+                dropdown._closeTimeoutId = null;
             }, DROPDOWN_CLOSE_DELAY);
+            dropdown._closeTimeoutId = timeoutId;
         });
     });
 
@@ -804,14 +807,31 @@ function setupDropdownHandlers() {
             closeAllDropdowns();
         }
     });
+
+    var blueprintDropdown = document.querySelector('#shipDesigner .dropdown');
+    if (blueprintDropdown) {
+        blueprintDropdown.addEventListener('mouseenter', function() {
+            var overlay = document.getElementById('overlayCanvas');
+            if (overlay) {
+                overlay.style.pointerEvents = 'none';
+            }
+        });
+        blueprintDropdown.addEventListener('mouseleave', function() {
+            var overlay = document.getElementById('overlayCanvas');
+            if (overlay) {
+                overlay.style.pointerEvents = 'auto';
+            }
+        });
+    }
 }
 
 function closeAllDropdowns() {
-    if (dropdownCloseTimeout) {
-        clearTimeout(dropdownCloseTimeout);
-        dropdownCloseTimeout = null;
-    }
     document.querySelectorAll('.dropdown.open').forEach(function(d) {
+        var timeoutId = d._closeTimeoutId;
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+            d._closeTimeoutId = null;
+        }
         d.classList.remove('open');
     });
 }
