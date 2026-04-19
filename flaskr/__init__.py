@@ -43,10 +43,13 @@ def create_app(test_config=None):
 
     @app.route('/api/ship_parts')
     def get_ship_parts():
-        """Return ship parts data as JSON for the frontend."""
+        """Return ship parts data as JSON for the frontend.
+
+        Returns parts keyed by their uppercase name (e.g. 'ION_CANNON')
+        matching the Ship_Part enum values.
+        """
         parts = {}
         for part_enum, stats in ship_parts.items():
-            # Get the PNG filename from the path
             png_path = ship_part_png[part_enum]
             png_filename = png_path.split('/')[-1].replace('.png', '')
             parts[png_filename] = dict(stats)
@@ -71,5 +74,87 @@ def create_app(test_config=None):
                 ]
             }
         return jsonify(ship_type_data)
+
+    @app.route('/api/validate_part_placement', methods=['POST'])
+    def validate_part_placement():
+        """Validate where a part can be placed on a ship.
+
+        Creates a temporary Ship instance with default parts for the given
+        ship type, then tests add_part() against every slot. Returns which
+        slots are invalid and why.
+
+        Request JSON:
+            ship_type (str): Ship type name, e.g. 'Terran_Interceptor'
+            part_name (str): Uppercase part name, e.g. 'ION_CANNON'
+
+        Response JSON:
+            invalid_slots (list[int]): Slot indices where placement fails
+            invalid_reasons (dict[int, str]): Reason for each invalid slot
+        """
+        from sim.eclipse_sd_sim import Ship, Ship_type, PlacementFailureReason
+        from sim.ship_parts_constants import Ship_Part
+        import re
+
+        data = request.get_json()
+        ship_type_name = data.get('ship_type')
+        part_name = data.get('part_name')
+
+        if not ship_type_name or not part_name:
+            return jsonify({'error': 'ship_type and part_name are required'}), 400
+
+        # Convert ship type string (e.g. 'Terran_Interceptor') to Ship_type enum
+        ship_type_map = {
+            'Terran_Interceptor': Ship_type.TERRAN_INTERCEPTOR,
+            'Terran_Cruiser': Ship_type.TERRAN_CRUISER,
+            'Terran_Dreadnought': Ship_type.TERRAN_DREADNOUGHT,
+            'Terran_Starbase': Ship_type.TERRAN_STARBASE,
+            'Eridani_Interceptor': Ship_type.ERIDANI_INTERCEPTOR,
+            'Eridani_Cruiser': Ship_type.ERIDANI_CRUISER,
+            'Eridani_Dreadnought': Ship_type.ERIDANI_DREADNOUGHT,
+            'Eridani_Starbase': Ship_type.ERIDANI_STARBASE,
+            'Orion_Interceptor': Ship_type.ORION_INTERCEPTOR,
+            'Orion_Cruiser': Ship_type.ORION_CRUISER,
+            'Orion_Dreadnought': Ship_type.ORION_DREADNOUGHT,
+            'Orion_Starbase': Ship_type.ORION_STARBASE,
+            'Planta_Interceptor': Ship_type.PLANTA_INTERCEPTOR,
+            'Planta_Cruiser': Ship_type.PLANTA_CRUISER,
+            'Planta_Dreadnought': Ship_type.PLANTA_DREADNOUGHT,
+            'Planta_Starbase': Ship_type.PLANTA_STARBASE,
+        }
+        ship_type_enum = ship_type_map.get(ship_type_name)
+        if not ship_type_enum:
+            return jsonify({'error': f'Unknown ship type: {ship_type_name}'}), 400
+
+        # Convert part name string (e.g. 'ION_CANNON') to Ship_Part enum
+        part_enum = None
+        for sp_enum in Ship_Part:
+            # Convert enum name to uppercase string form (e.g. 'ION_CANNON')
+            enum_str = sp_enum.name
+            if part_name == enum_str:
+                part_enum = sp_enum
+                break
+        if not part_enum:
+            return jsonify({'error': f'Unknown part: {part_name}'}), 400
+
+        invalid_slots = []
+        invalid_reasons = {}
+        num_slots = ship_types[ship_type_enum]['slots']
+
+        # Test placing the part in each slot (fresh ship for each to avoid state pollution)
+        for slot_idx in range(num_slots):
+            test_ship = Ship(ship_type_enum, player_num=1, is_attacker=True, ship_parts=None)
+            success, reason = test_ship.add_part(part_name, slot_idx)
+            if not success:
+                invalid_slots.append(slot_idx)
+                reason_map = {
+                    PlacementFailureReason.INSUFFICIENT_ENERGY: 'INSUFFICIENT_ENERGY',
+                    PlacementFailureReason.REMOVES_ONLY_DRIVE: 'REMOVES_ONLY_DRIVE',
+                }
+                invalid_reasons[slot_idx] = reason_map.get(reason, 'UNKNOWN')
+
+        return jsonify({
+            'invalid_slots': invalid_slots,
+            'invalid_reasons': invalid_reasons,
+        })
 
     return app

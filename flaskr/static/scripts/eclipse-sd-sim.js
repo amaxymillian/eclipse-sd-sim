@@ -13,6 +13,12 @@ var overlayImagesLoaded = {};
 // State: current blueprint being displayed
 var currentBlueprintName = null;
 
+// State: invalid slots for the currently selected part (set of slot indices)
+var invalidSlotsForSelectedPart = new Set();
+
+// State: last validation result for user feedback
+var lastValidationFeedback = null;
+
 // Ship types enum (unused but kept for reference)
 const ShipType = {
     TERRAN_INTERCEPTOR: "Terran_Interceptor",
@@ -161,7 +167,7 @@ function detectBlueprintSlots(canvas, ctx, blueprintName) {
             var rightEdgeOK = verifyVerticalEdge(data, width, rightX, top.topRow, bottom.bottomRow, WHITE_THRESHOLD);
             if (!leftEdgeOK || !rightEdgeOK) continue;
 
-            slots.push({x: leftX, y: top.topRow, w: slotW, h: slotH, occupied: false, partName: null});
+            slots.push({x: leftX, y: top.topRow, w: slotW, h: slotH, occupied: false, partName: null, invalid: false, invalidReason: null});
         }
     }
 
@@ -215,33 +221,49 @@ function drawOverlay() {
         var ctx = overlay.getContext('2d');
         ctx.clearRect(0, 0, overlay.width, overlay.height);
 
-    var slots = blueprintSlotBoxes[currentBlueprintName];
-    if (!slots) return;
+        var slots = blueprintSlotBoxes[currentBlueprintName];
+        if (!slots) return;
 
-    for (var i = 0; i < slots.length; i++) {
-        var s = slots[i];
+        for (var i = 0; i < slots.length; i++) {
+            var s = slots[i];
 
-        if (s.occupied) {
-            ctx.fillStyle = 'rgba(55, 123, 168, 0.12)';
-            ctx.fillRect(s.x, s.y, s.w, s.h);
+            // Draw translucent red tint for invalid slots
+            if (s.invalid) {
+                ctx.fillStyle = 'rgba(255, 0, 0, 0.25)';
+                ctx.fillRect(s.x, s.y, s.w, s.h);
+            } else if (s.occupied) {
+                ctx.fillStyle = 'rgba(55, 123, 168, 0.12)';
+                ctx.fillRect(s.x, s.y, s.w, s.h);
+            }
+
+            // Draw border based on slot state
+            if (s.occupied) {
+                ctx.strokeStyle = '#2e7d32';
+                ctx.lineWidth = 3;
+            } else if (s.invalid) {
+                ctx.strokeStyle = '#d32f2f';
+                ctx.lineWidth = 2;
+                // Draw an X for invalid slots
+                var margin = 4;
+                ctx.beginPath();
+                ctx.moveTo(s.x + margin, s.y + margin);
+                ctx.lineTo(s.x + s.w - margin, s.y + s.h - margin);
+                ctx.moveTo(s.x + s.w - margin, s.y + margin);
+                ctx.lineTo(s.x + margin, s.y + s.h - margin);
+                ctx.stroke();
+            } else if (i === hoveredSlotIndex) {
+                ctx.strokeStyle = '#64b5f6';
+                ctx.lineWidth = 3;
+            } else {
+                ctx.strokeStyle = '#1565c0';
+                ctx.lineWidth = 2;
+            }
+            ctx.strokeRect(s.x, s.y, s.w, s.h);
+
+            if (s.occupied && s.partName) {
+                drawPartImage(ctx, s.partName, s.x + 2, s.y + 2, s.w - 4, s.h - 4);
+            }
         }
-
-        if (s.occupied) {
-            ctx.strokeStyle = '#2e7d32';
-            ctx.lineWidth = 3;
-        } else if (i === hoveredSlotIndex) {
-            ctx.strokeStyle = '#64b5f6';
-            ctx.lineWidth = 3;
-        } else {
-            ctx.strokeStyle = '#1565c0';
-            ctx.lineWidth = 2;
-        }
-        ctx.strokeRect(s.x, s.y, s.w, s.h);
-
-        if (s.occupied && s.partName) {
-            drawPartImage(ctx, s.partName, s.x + 2, s.y + 2, s.w - 4, s.h - 4);
-        }
-    }
     } catch(e) {
         console.error('drawOverlay error:', e);
     }
@@ -271,7 +293,7 @@ function getSlotAtPosition(x, y) {
     console.log('[DIAG] getSlotAtPosition: checking', slots.length, 'slots');
     for (var i = 0; i < slots.length; i++) {
         var s = slots[i];
-        console.log('[DIAG] getSlotAtPosition: slot', i, '=', {x: s.x, y: s.y, w: s.w, h: s.h}, 'occupied:', s.occupied);
+        console.log('[DIAG] getSlotAtPosition: slot', i, '=', {x: s.x, y: s.y, w: s.w, h: s.h}, 'occupied:', s.occupied, 'invalid:', s.invalid);
         if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) {
             console.log('[DIAG] getSlotAtPosition: MATCH found at slot', i);
             return i;
@@ -292,9 +314,25 @@ function placePart(slotIndex, partName) {
         console.log('[DIAG] placePart: slot', slotIndex, 'does not exist (total slots:', slots.length, ')');
         return;
     }
+
+    // Check if slot is invalid for the selected part
+    if (slots[slotIndex].invalid) {
+        console.log('[DIAG] placePart: slot', slotIndex, 'is invalid - reason:', slots[slotIndex].invalidReason);
+        showPlacementFeedback(slots[slotIndex].invalidReason);
+        return;
+    }
+
+    // If placing the same part in an occupied slot, remove the existing part first
+    if (slots[slotIndex].occupied && slots[slotIndex].partName === partName) {
+        console.log('[DIAG] placePart: slot already has this part, skipping');
+        return;
+    }
+
     console.log('[DIAG] placePart: placing', partName, 'in slot', slotIndex);
     slots[slotIndex].occupied = true;
     slots[slotIndex].partName = partName;
+    slots[slotIndex].invalid = false;
+    slots[slotIndex].invalidReason = null;
     drawOverlay();
     updateShipStats();
     console.log('[DIAG] placePart: done, slot is now:', slots[slotIndex]);
@@ -310,6 +348,84 @@ function removePart(slotIndex) {
     updateShipStats();
 }
 
+// ===== User Feedback =====
+
+function showPlacementFeedback(reason) {
+    // Show a brief flash message near the canvas
+    var feedbackEl = document.getElementById('placementFeedback');
+    if (!feedbackEl) {
+        feedbackEl = document.createElement('div');
+        feedbackEl.id = 'placementFeedback';
+        feedbackEl.style.cssText = 'position: absolute; top: 10px; left: 50%; transform: translateX(-50%); ' +
+            'background-color: #d32f2f; color: white; padding: 8px 16px; border-radius: 4px; ' +
+            'z-index: 100; font-size: 14px; font-weight: bold; pointer-events: none; ' +
+            'opacity: 0; transition: opacity 0.3s ease-out;';
+        var canvasContainer = document.getElementById('canvasContainer');
+        if (canvasContainer) {
+            canvasContainer.appendChild(feedbackEl);
+        }
+    }
+
+    var message = 'Cannot place part here: ';
+    switch(reason) {
+        case 'INSUFFICIENT_ENERGY':
+            message += 'Insufficient energy. This part would leave the ship with negative energy.';
+            break;
+        case 'REMOVES_ONLY_DRIVE':
+            message += 'Cannot remove the last drive. The ship needs at least one drive to function.';
+            break;
+        default:
+            message += 'This part cannot be installed in this slot.';
+    }
+
+    feedbackEl.textContent = message;
+    feedbackEl.style.opacity = '1';
+
+    // Fade out after 3 seconds
+    setTimeout(function() {
+        feedbackEl.style.opacity = '0';
+    }, 3000);
+}
+
+// ===== Validation =====
+
+function validatePartPlacement(partName) {
+    if (!currentBlueprintName) {
+        return;
+    }
+
+    var typeName = currentBlueprintName;
+    // Validate the Ship_Part enum name matches
+    var response = fetch('/api/validate_part_placement', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ship_type: typeName, part_name: partName})
+    })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+        var slots = blueprintSlotBoxes[currentBlueprintName];
+        if (!slots) return;
+
+        invalidSlotsForSelectedPart = new Set(data.invalid_slots || []);
+
+        // Update slot invalid states
+        for (var i = 0; i < slots.length; i++) {
+            if (invalidSlotsForSelectedPart.has(i)) {
+                slots[i].invalid = true;
+                slots[i].invalidReason = data.invalid_reasons[i] || null;
+            } else {
+                slots[i].invalid = false;
+                slots[i].invalidReason = null;
+            }
+        }
+
+        drawOverlay();
+    })
+    .catch(function(err) {
+        console.error('Failed to validate part placement:', err);
+    });
+}
+
 // ===== Drag and Drop =====
 
 function onDragStart(event, partName) {
@@ -317,6 +433,7 @@ function onDragStart(event, partName) {
     event.dataTransfer.setData('text/plain', partName);
     event.dataTransfer.effectAllowed = 'copy';
     selectedPartName = partName;
+    validatePartPlacement(partName);
 
     var img = event.target;
     img.style.opacity = '0.5';
@@ -393,6 +510,12 @@ function setupOverlayHandlers() {
             var slots = blueprintSlotBoxes[currentBlueprintName];
             console.log('[DIAG] click: slots[', slotIndex, '].occupied =', slots && slots[slotIndex] ? slots[slotIndex].occupied : 'N/A');
             if (selectedPartName) {
+                // Check if the clicked slot is invalid for the selected part
+                if (slots && slots[slotIndex] && slots[slotIndex].invalid) {
+                    console.log('[DIAG] click: slot', slotIndex, 'is invalid - showing feedback');
+                    showPlacementFeedback(slots[slotIndex].invalidReason);
+                    return;
+                }
                 placePart(slotIndex, selectedPartName);
             } else if (slots && slots[slotIndex] && slots[slotIndex].occupied) {
                 removePart(slotIndex);
@@ -619,6 +742,9 @@ function addPartToShip(partName) {
             img.classList.add('selected');
         }
     });
+
+    // Validate placement for the selected part against all slots
+    validatePartPlacement(partName);
 }
 
 // ===== Ship Statistics =====
@@ -825,4 +951,3 @@ function closeAllDropdowns() {
         d.classList.remove('open');
     });
 }
-

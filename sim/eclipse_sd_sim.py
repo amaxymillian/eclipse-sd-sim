@@ -23,6 +23,25 @@ logger.addHandler(ch)
 
 from sim.ship_parts_constants import Ship_Part, ship_parts
 
+def _part_name_to_enum(part_name):
+    """Convert part name string to Ship_Part enum.
+    
+    Accepts both uppercase string names (e.g. 'ION_CANNON') and 
+    Ship_Part enum values.
+    
+    Args:
+        part_name: Either a string like 'ION_CANNON' or a Ship_Part enum.
+        
+    Returns:
+        Ship_Part enum value, or the input if already an enum.
+    """
+    if isinstance(part_name, Ship_Part):
+        return part_name
+    for sp in Ship_Part:
+        if sp.name == part_name:
+            return sp
+    raise ValueError(f"Unknown part name: {part_name}")
+
 class PlacementFailureReason(IntEnum):
     SUCCESS = 0
     INSUFFICIENT_ENERGY = 1
@@ -154,23 +173,34 @@ class Ship:
 
         
     def add_part(self, part_name, part_position) -> tuple[bool, PlacementFailureReason]:
-        part_energy = ship_parts[part_name]['energy']
+        """Add a part to a slot on this ship.
+
+        Args:
+            part_name: The part to add. Accepts either a Ship_Part enum value
+                or a string name like 'ION_CANNON'.
+            part_position: The slot index to place the part in.
+
+        Returns:
+            Tuple of (success: bool, reason: PlacementFailureReason).
+        """
+        part_enum = _part_name_to_enum(part_name)
+        part_energy = ship_parts[part_enum].get('energy', 0)
         old_part = self.ship_parts[part_position]
-        old_energy = ship_parts[old_part]['energy'] if old_part is not None else 0
+        old_energy = ship_parts[old_part].get('energy', 0) if old_part is not None else 0
         new_available_energy = self.get_avail_energy() - old_energy + part_energy
         if new_available_energy < 0:
             return (False, PlacementFailureReason.INSUFFICIENT_ENERGY)
 
-        drive_count = sum(1 for p in self.ship_parts if p is not None and ship_parts[p]['type'] == 'drive')
-        if old_part is not None and ship_parts[old_part]['type'] == 'drive':
+        drive_count = sum(1 for p in self.ship_parts if p is not None and ship_parts[p].get('type') == 'drive')
+        if old_part is not None and ship_parts[old_part].get('type') == 'drive':
             drive_count -= 1
-        if ship_parts[part_name]['type'] == 'drive':
+        if ship_parts[part_enum].get('type') == 'drive':
             drive_count += 1
         is_starbase = 'STARBASE' in self.ship_type.name
         if not is_starbase and drive_count < 1:
             return (False, PlacementFailureReason.REMOVES_ONLY_DRIVE)
 
-        self.ship_parts[part_position] = part_name
+        self.ship_parts[part_position] = part_enum
         self.update_init()
         self.recalc_hp()
         return (True, PlacementFailureReason.SUCCESS)
@@ -187,11 +217,12 @@ class Ship:
         self._hp = new_hp
         
     def get_avail_energy(self) -> int:
+        """Calculate the total available energy from all installed parts."""
         energy = 0
         for part in self.ship_parts:
             if part is None:
                 continue
-            energy += ship_parts[part]['energy']
+            energy += ship_parts[part].get('energy', 0)
             
         return energy
           
@@ -210,9 +241,10 @@ class Ship:
         for part in self.ship_parts:
             if part is None:
                 continue
-            elif 'damage' in ship_parts[part]:
+            part_stats = ship_parts[part]
+            if 'damage' in part_stats:
                 atk_roll = random.randint(1,6)
-                if ship_parts[part]['damage'] == 'RIFT_DAMAGE':
+                if part_stats['damage'] == 'RIFT_DAMAGE':
                     # Rift cannons work very differently: 1: deal 1 dmg to a ship with a rift weapon equipped,
                     # 2 or 3 is a miss, 4 is one guaranteed damage to the target, 5 is two gauranteed damage, 
                     # 6 is 3 damage to the target and 1 to a rift equipped ship
@@ -242,44 +274,48 @@ class Ship:
                         #1 is always a miss
                         continue
                     else:
-                        logger.debug(f"ship {self} rolls a {atk_roll} and adds that roll with {ship_parts[part]['damage']} to the damage stack!")
-                        dmg_stack.append((atk_roll, ship_parts[part]['damage']))
+                        logger.debug(f"ship {self} rolls a {atk_roll} and adds that roll with {part_stats['damage']} to the damage stack!")
+                        dmg_stack.append((atk_roll, part_stats['damage']))
                 
         return dmg_stack
             
     
         
     def update_init(self) -> int:
+        """Recalculate initiative from all installed parts."""
         self._initiative = ship_types[self.ship_type]["base_initiative"]
         for part in self.ship_parts:
             if part is None:
                 continue
-            elif 'initiative' in ship_parts[part]:
-                self._initiative += ship_parts[part]['initiative']
+            part_stats = ship_parts[part]
+            if 'initiative' in part_stats:
+                self._initiative += part_stats['initiative']
                 
         return self._initiative
     
     def recalc_hp(self) -> int:
-        #Recalc HP of this ship which is 1 + any installed part with hull add ons
+        """Recalculate HP of this ship (1 + sum of armor from hull parts)."""
         self._hp = 1
         
         for part in self.ship_parts:
             if part is None:
                 continue
-            elif 'armor' in ship_parts[part]:
-                self._hp += ship_parts[part]['armor']
+            part_stats = ship_parts[part]
+            if 'armor' in part_stats:
+                self._hp += part_stats['armor']
                 
         return self._hp
     
     def update_targeting(self) -> int:
-        #Recalc targeting of this ship which is 0 + any installed part with targetting add ons
+        """Recalculate targeting from all installed parts."""
         self._targeting = 0
         
         for part in self.ship_parts:
             if part is None:
                 continue
-            elif 'targeting' in ship_parts[part]:
-                self._targeting += ship_parts[part]['targeting']
+            part_stats = ship_parts[part]
+            if 'targeting' in part_stats:
+                self._targeting += part_stats['targeting']
                 
         return self._targeting
 
@@ -316,14 +352,15 @@ class Ship:
         return self._targeting
 
     def update_shielding(self) -> int:
-        #Recalc shield of this ship which is 0 + any installed part with targetting add ons
+        """Recalculate shielding from all installed parts."""
         self._shielding = 0
         
         for part in self.ship_parts:
             if part is None:
                 continue
-            elif 'shielding' in ship_parts[part]:
-                self._shielding += ship_parts[part]['shielding']
+            part_stats = ship_parts[part]
+            if 'shielding' in part_stats:
+                self._shielding += part_stats['shielding']
                 
         return self._shielding
 
