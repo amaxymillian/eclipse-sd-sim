@@ -484,18 +484,27 @@ function selectBlueprint(blueprintName) {
             overlayCanvas.width = image.naturalWidth;
             overlayCanvas.height = image.naturalHeight;
 
+            // Cap canvas width to container width to prevent horizontal overflow
+            var containerWidth = document.getElementById('shipBlueprintDiv').clientWidth;
+            var scale = 1;
+            if (image.naturalWidth > containerWidth) {
+                scale = containerWidth / image.naturalWidth;
+            }
+            var displayWidth = Math.floor(image.naturalWidth * scale);
+            var displayHeight = Math.floor(image.naturalHeight * scale);
+
             // Explicitly set the display size to match the internal dimensions
             // This ensures the overlay canvas is properly sized and receives pointer events
-            shipBlueprintCanvas.style.width = image.naturalWidth + 'px';
-            shipBlueprintCanvas.style.height = image.naturalHeight + 'px';
-            overlayCanvas.style.width = image.naturalWidth + 'px';
-            overlayCanvas.style.height = image.naturalHeight + 'px';
+            shipBlueprintCanvas.style.width = displayWidth + 'px';
+            shipBlueprintCanvas.style.height = displayHeight + 'px';
+            overlayCanvas.style.width = displayWidth + 'px';
+            overlayCanvas.style.height = displayHeight + 'px';
 
             // Ensure canvas container is sized correctly
             var canvasContainer = document.getElementById('canvasContainer');
             if (canvasContainer) {
-                canvasContainer.style.width = image.naturalWidth + 'px';
-                canvasContainer.style.height = image.naturalHeight + 'px';
+                canvasContainer.style.width = displayWidth + 'px';
+                canvasContainer.style.height = displayHeight + 'px';
             }
 
             console.log('[DIAG] Canvas set: internal dimensions =', image.naturalWidth, 'x', image.naturalHeight);
