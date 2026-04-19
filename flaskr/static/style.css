@@ -156,7 +156,7 @@ html {
 
   #canvasContainer {
     position: relative;
-    display: inline-block;
+    display: block;
   }
 
   #overlayCanvas {
@@ -172,36 +172,67 @@ html {
     max-height: 80vh;
   }
 
-  .part-image {
-    cursor: grab;
-    transition: outline 0.15s ease, box-shadow 0.15s ease;
+  #shipBlueprintTop {
+    margin-bottom: 1rem;
   }
 
-  .part-image.selected {
-    outline: 3px solid #377ba8;
-    outline-offset: 2px;
-    box-shadow: 0 0 8px rgba(55, 123, 168, 0.4);
+  #partDropdownsRow {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: flex-start;
   }
 
-  .part-image:active {
-    cursor: grabbing;
+  #blueprintStatsWrapper {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
   }
 
-  #canvasContainer {
-    position: relative;
-    display: inline-block;
+  #shipStatsPanel {
+    min-width: 200px;
+    max-width: 250px;
+    background: #f8f9fa;
+    border: 2px solid #377ba8;
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 0.9em;
+    flex-shrink: 0;
   }
 
-  #overlayCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    cursor: crosshair;
-    pointer-events: auto;
+  #shipStatsPanel h3 {
+    margin: 0 0 8px 0;
+    font-size: 1em;
+    color: #377ba8;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 4px;
   }
 
-  #shipBlueprintDiv {
-    overflow: auto;
-    max-height: 80vh;
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
   }
-  
+
+  .stat-label {
+    color: #555;
+    font-weight: 600;
+  }
+
+  .stat-value {
+    color: #222;
+    font-weight: bold;
+    font-size: 1.05em;
+  }
+
+  .stat-divider {
+    border: none;
+    border-top: 1px solid #377ba8;
+    margin: 10px 0;
+  }
+
+  .parts-list {
+    font-size: 0.85em;
+    color: #333;
+    line-height: 1.5;
+  }

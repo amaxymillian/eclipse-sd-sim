@@ -183,7 +183,8 @@ function detectBlueprintSlots(canvas, ctx, blueprintName) {
     }
 
     blueprintSlotBoxes[blueprintName] = filteredSlots;
-    console.log('detectBlueprintSlots found', filteredSlots.length, 'slots for', blueprintName);
+    console.log('[DIAG] detectBlueprintSlots found', filteredSlots.length, 'slots for', blueprintName);
+    console.log('[DIAG] detectBlueprintSlots slot details:', JSON.stringify(filteredSlots.map(function(s) { return {x: s.x, y: s.y, w: s.w, h: s.h}; })));
     return filteredSlots;
 }
 
@@ -261,36 +262,58 @@ function drawPartImage(ctx, partName, x, y, w, h) {
 // ===== Slot Interaction =====
 
 function getSlotAtPosition(x, y) {
+    console.log('[DIAG] getSlotAtPosition: x=', x, 'y=', y, 'currentBlueprintName=', currentBlueprintName);
     var slots = blueprintSlotBoxes[currentBlueprintName];
-    if (!slots) return -1;
+    if (!slots) {
+        console.log('[DIAG] getSlotAtPosition: no slots found for current blueprint');
+        return -1;
+    }
+    console.log('[DIAG] getSlotAtPosition: checking', slots.length, 'slots');
     for (var i = 0; i < slots.length; i++) {
         var s = slots[i];
+        console.log('[DIAG] getSlotAtPosition: slot', i, '=', {x: s.x, y: s.y, w: s.w, h: s.h}, 'occupied:', s.occupied);
         if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) {
+            console.log('[DIAG] getSlotAtPosition: MATCH found at slot', i);
             return i;
         }
     }
+    console.log('[DIAG] getSlotAtPosition: no match found');
     return -1;
 }
 
 function placePart(slotIndex, partName) {
+    console.log('[DIAG] placePart called: slotIndex=', slotIndex, 'partName=', partName);
     var slots = blueprintSlotBoxes[currentBlueprintName];
-    if (!slots || !slots[slotIndex]) return;
+    if (!slots) {
+        console.log('[DIAG] placePart: NO SLOTS for', currentBlueprintName);
+        return;
+    }
+    if (!slots[slotIndex]) {
+        console.log('[DIAG] placePart: slot', slotIndex, 'does not exist (total slots:', slots.length, ')');
+        return;
+    }
+    console.log('[DIAG] placePart: placing', partName, 'in slot', slotIndex);
     slots[slotIndex].occupied = true;
     slots[slotIndex].partName = partName;
     drawOverlay();
+    updateShipStats();
+    console.log('[DIAG] placePart: done, slot is now:', slots[slotIndex]);
 }
 
 function removePart(slotIndex) {
+    console.log('[DIAG] removePart called: slotIndex=', slotIndex);
     var slots = blueprintSlotBoxes[currentBlueprintName];
     if (!slots || !slots[slotIndex]) return;
     slots[slotIndex].occupied = false;
     slots[slotIndex].partName = null;
     drawOverlay();
+    updateShipStats();
 }
 
 // ===== Drag and Drop =====
 
 function onDragStart(event, partName) {
+    console.log('[DIAG] onDragStart: partName =', partName);
     event.dataTransfer.setData('text/plain', partName);
     event.dataTransfer.effectAllowed = 'copy';
     selectedPartName = partName;
@@ -304,41 +327,74 @@ function onDragStart(event, partName) {
 
 function setupOverlayHandlers() {
     var overlay = document.getElementById('overlayCanvas');
+    console.log('[DIAG] setupOverlayHandlers starting: overlay element found:', !!overlay);
     if (!overlay) return;
 
+    console.log('[DIAG] setupOverlayHandlers: overlay internal dimensions - width:', overlay.width, 'height:', overlay.height);
+    var overlayRect = overlay.getBoundingClientRect();
+    console.log('[DIAG] setupOverlayHandlers: overlay display size -', overlayRect);
+    console.log('[DIAG] setupOverlayHandlers: overlay style.width =', overlay.style.width, 'style.height =', overlay.style.height);
+    console.log('[DIAG] setupOverlayHandlers: overlay computed pointer-events =', getComputedStyle(overlay).pointerEvents);
+    console.log('[DIAG] setupOverlayHandlers: overlay computed cursor =', getComputedStyle(overlay).cursor);
+
+    if (overlayRect.width === 0 || overlayRect.height === 0) {
+        console.warn('[DIAG] setupOverlayHandlers: overlay canvas has 0 size at setup time - will check again after blueprint selection');
+    }
+
     overlay.addEventListener('dragover', function(event) {
+        console.log('[DIAG] dragover event fired on overlay');
         event.preventDefault();
         event.dataTransfer.dropEffect = 'copy';
     });
 
     overlay.addEventListener('drop', function(event) {
+        console.log('[DIAG] DROP event fired on overlay', {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            partName: event.dataTransfer.getData('text/plain')
+        });
         event.preventDefault();
         var rect = overlay.getBoundingClientRect();
+        console.log('[DIAG] drop: overlay rect =', rect);
         var scaleX = overlay.width / rect.width;
         var scaleY = overlay.height / rect.height;
+        console.log('[DIAG] drop: scale factors =', scaleX, scaleY);
         var x = (event.clientX - rect.left) * scaleX;
         var y = (event.clientY - rect.top) * scaleY;
+        console.log('[DIAG] drop: calculated coords =', x, y);
 
         var partName = event.dataTransfer.getData('text/plain');
         var slotIndex = getSlotAtPosition(x, y);
+        console.log('[DIAG] drop: slotIndex =', slotIndex, 'partName =', partName);
         if (slotIndex >= 0 && partName) {
             placePart(slotIndex, partName);
+        } else {
+            var slots = blueprintSlotBoxes[currentBlueprintName];
+            console.log('[DIAG] drop: slots for current blueprint =', slots ? slots.length : 'none', 'currentBlueprintName =', currentBlueprintName);
         }
     });
 
     overlay.addEventListener('click', function(event) {
+        console.log('[DIAG] CLICK event fired on overlay', {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            selectedPartName: selectedPartName
+        });
         var rect = overlay.getBoundingClientRect();
         var scaleX = overlay.width / rect.width;
         var scaleY = overlay.height / rect.height;
         var x = (event.clientX - rect.left) * scaleX;
         var y = (event.clientY - rect.top) * scaleY;
+        console.log('[DIAG] click: calculated coords =', x, y);
 
         var slotIndex = getSlotAtPosition(x, y);
+        console.log('[DIAG] click: slotIndex =', slotIndex);
         if (slotIndex >= 0) {
             var slots = blueprintSlotBoxes[currentBlueprintName];
+            console.log('[DIAG] click: slots[', slotIndex, '].occupied =', slots && slots[slotIndex] ? slots[slotIndex].occupied : 'N/A');
             if (selectedPartName) {
                 placePart(slotIndex, selectedPartName);
-            } else if (slots[slotIndex].occupied) {
+            } else if (slots && slots[slotIndex] && slots[slotIndex].occupied) {
                 removePart(slotIndex);
             }
         }
@@ -378,6 +434,10 @@ function setupOverlayHandlers() {
             drawOverlay();
         }
     });
+
+    console.log('[DIAG] setupOverlayHandlers: all event listeners attached to overlay');
+    console.log('[DIAG] setupOverlayHandlers: overlay style.pointerEvents =', getComputedStyle(overlay).pointerEvents);
+    console.log('[DIAG] setupOverlayHandlers: overlay computed position =', getComputedStyle(overlay).position);
 }
 
 function selectBlueprint(blueprintName) {
@@ -424,6 +484,31 @@ function selectBlueprint(blueprintName) {
             overlayCanvas.width = image.naturalWidth;
             overlayCanvas.height = image.naturalHeight;
 
+            // Explicitly set the display size to match the internal dimensions
+            // This ensures the overlay canvas is properly sized and receives pointer events
+            shipBlueprintCanvas.style.width = image.naturalWidth + 'px';
+            shipBlueprintCanvas.style.height = image.naturalHeight + 'px';
+            overlayCanvas.style.width = image.naturalWidth + 'px';
+            overlayCanvas.style.height = image.naturalHeight + 'px';
+
+            // Ensure canvas container is sized correctly
+            var canvasContainer = document.getElementById('canvasContainer');
+            if (canvasContainer) {
+                canvasContainer.style.width = image.naturalWidth + 'px';
+                canvasContainer.style.height = image.naturalHeight + 'px';
+            }
+
+            console.log('[DIAG] Canvas set: internal dimensions =', image.naturalWidth, 'x', image.naturalHeight);
+            var overlayRect = overlayCanvas.getBoundingClientRect();
+            console.log('[DIAG] Canvas set: overlay display size =', overlayRect);
+            console.log('[DIAG] Canvas set: overlay style.width =', overlayCanvas.style.width, 'style.height =', overlayCanvas.style.height);
+            console.log('[DIAG] Canvas set: overlay computed pointer-events =', getComputedStyle(overlayCanvas).pointerEvents);
+            console.log('[DIAG] Canvas set: overlay computed cursor =', getComputedStyle(overlayCanvas).cursor);
+
+            if (overlayRect.width === 0 || overlayRect.height === 0) {
+                console.error('[DIAG] ERROR: Overlay canvas has 0 size! Pointer events will NOT work!');
+            }
+
             var ctx = shipBlueprintCanvas.getContext('2d');
             ctx.clearRect(0, 0, shipBlueprintCanvas.width, shipBlueprintCanvas.height);
             ctx.drawImage(image, 0, 0);
@@ -432,6 +517,10 @@ function selectBlueprint(blueprintName) {
             detectBlueprintSlots(shipBlueprintCanvas, ctx, blueprintName);
 
             drawOverlay();
+            loadShipData(function() {
+                console.log('[DIAG] Ship data loaded successfully');
+                updateShipStats();
+            });
 
             loadingDiv.style.display = "none";
             console.log('Blueprint displayed successfully');
@@ -511,6 +600,7 @@ function showPrimaryDiv(divToShow) {
 }
 
 function addPartToShip(partName) {
+    console.log('[DIAG] addPartToShip called: partName =', partName);
     selectedPartName = partName;
 
     document.querySelectorAll('.part-image').forEach(function(img) {
@@ -521,8 +611,208 @@ function addPartToShip(partName) {
     });
 }
 
+// ===== Ship Statistics =====
+
+var shipPartsData = {};
+var shipTypesData = {};
+var currentShipStats = null;
+
+function loadShipData(callback) {
+    fetch('/api/ship_parts')
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            shipPartsData = data;
+            return fetch('/api/ship_types');
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            shipTypesData = data;
+            if (callback) callback();
+        })
+        .catch(function(err) {
+            console.error('Failed to load ship data:', err);
+        });
+}
+
+function calculateShipStats(blueprintName) {
+    var typeName = blueprintName;
+    var shipType = shipTypesData[typeName];
+    if (!shipType) {
+        currentShipStats = null;
+        return null;
+    }
+
+    var slots = blueprintSlotBoxes[blueprintName];
+    if (!slots) {
+        currentShipStats = null;
+        return null;
+    }
+
+    var totalShielding = 0;
+    var totalEnergy = shipType.bonus_energy;
+    var initiative = shipType.base_initiative;
+    var armor = 0;
+    var targeting = shipType.bonus_targeting;
+
+    for (var i = 0; i < slots.length; i++) {
+        var partName = slots[i].partName;
+        if (!partName) continue;
+
+        var partData = shipPartsData[partName];
+        if (!partData) continue;
+
+        if ('shielding' in partData) {
+            totalShielding += partData.shielding;
+        }
+        if ('energy' in partData) {
+            totalEnergy += partData.energy;
+        }
+        if ('initiative' in partData) {
+            initiative += partData.initiative;
+        }
+        if ('armor' in partData) {
+            armor += partData.armor;
+        }
+        if ('targeting' in partData) {
+            targeting += partData.targeting;
+        }
+    }
+
+    var hitPoints = 1 + armor;
+    var availableEnergy = totalEnergy;
+
+    currentShipStats = {
+        shielding: totalShielding,
+        energy: totalEnergy,
+        availableEnergy: availableEnergy,
+        initiative: initiative,
+        armor: armor,
+        targeting: targeting,
+        hp: hitPoints,
+        maxHp: hitPoints
+    };
+
+    return currentShipStats;
+}
+
+function updateStatsDisplay() {
+    var stats = currentShipStats;
+    if (!stats) {
+        document.getElementById('statShielding').textContent = '-';
+        document.getElementById('statEnergy').textContent = '-';
+        document.getElementById('statAvailEnergy').textContent = '-';
+        document.getElementById('statInitiative').textContent = '-';
+        document.getElementById('statArmor').textContent = '-';
+        document.getElementById('statTargeting').textContent = '-';
+        document.getElementById('statHP').textContent = '-';
+        return;
+    }
+
+    document.getElementById('statShielding').textContent = stats.shielding;
+    document.getElementById('statEnergy').textContent = stats.energy;
+    document.getElementById('statAvailEnergy').textContent = stats.availableEnergy;
+    document.getElementById('statInitiative').textContent = stats.initiative;
+    document.getElementById('statArmor').textContent = stats.armor;
+    document.getElementById('statTargeting').textContent = stats.targeting;
+    document.getElementById('statHP').textContent = stats.hp;
+
+    updateInstalledPartsList();
+}
+
+function updateInstalledPartsList() {
+    var listEl = document.getElementById('installedPartsList');
+    if (!currentBlueprintName) {
+        listEl.textContent = 'None';
+        return;
+    }
+
+    var slots = blueprintSlotBoxes[currentBlueprintName];
+    if (!slots) {
+        listEl.textContent = 'None';
+        return;
+    }
+
+    var parts = [];
+    for (var i = 0; i < slots.length; i++) {
+        if (slots[i].partName) {
+            parts.push('Slot ' + (i + 1) + ': ' + slots[i].partName);
+        }
+    }
+
+    if (parts.length === 0) {
+        listEl.textContent = 'None';
+    } else {
+        listEl.innerHTML = parts.join('<br>');
+    }
+}
+
+function updateShipStats() {
+    if (!currentBlueprintName) return;
+    calculateShipStats(currentBlueprintName);
+    updateStatsDisplay();
+}
+
+// ===== End Ship Statistics =====
+
 // Initialize overlay handlers when the page loads
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('[DIAG] DOMContentLoaded: initializing overlay handlers');
     setupOverlayHandlers();
+    setupDropdownHandlers();
 });
+
+var dropdownCloseTimeout = null;
+var DROPDOWN_CLOSE_DELAY = 400;
+
+function setupDropdownHandlers() {
+    var dropdowns = document.querySelectorAll('.dropdown');
+    dropdowns.forEach(function(dropdown) {
+        var btn = dropdown.querySelector('.dropbtn');
+        if (btn) {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var isOpen = dropdown.classList.contains('open');
+                closeAllDropdowns();
+                if (!isOpen) {
+                    dropdown.classList.add('open');
+                }
+            });
+        }
+
+        dropdown.addEventListener('mouseenter', function() {
+            if (dropdownCloseTimeout) {
+                clearTimeout(dropdownCloseTimeout);
+                dropdownCloseTimeout = null;
+            }
+            dropdown.classList.add('open');
+        });
+
+        dropdown.addEventListener('mouseleave', function() {
+            if (dropdownCloseTimeout) {
+                clearTimeout(dropdownCloseTimeout);
+            }
+            dropdownCloseTimeout = setTimeout(function() {
+                dropdown.classList.remove('open');
+                dropdownCloseTimeout = null;
+            }, DROPDOWN_CLOSE_DELAY);
+        });
+    });
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+            closeAllDropdowns();
+        }
+    });
+}
+
+function closeAllDropdowns() {
+    if (dropdownCloseTimeout) {
+        clearTimeout(dropdownCloseTimeout);
+        dropdownCloseTimeout = null;
+    }
+    document.querySelectorAll('.dropdown.open').forEach(function(d) {
+        d.classList.remove('open');
+    });
+}
 
