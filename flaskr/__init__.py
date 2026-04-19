@@ -32,6 +32,7 @@ def create_app(test_config=None):
         pass
 
     # a simple page that says hello
+    @app.route('/', methods=('GET','POST'))
     @app.route('/index', methods=('GET','POST'))
     def index():
         # Do Stuff
