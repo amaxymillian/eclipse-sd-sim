@@ -7,7 +7,7 @@ html {
   }
 
   body {
-    max-width: 960px;
+    max-width: 1200px;
     margin: 0 auto;
     background: white;
     overflow-x: hidden;
@@ -133,14 +133,14 @@ html {
   }
 
   #shipBlueprintCanvas {
-    width: 800px;
-    height: 600px;
+    width: 850px;
+    height: 640px;
     display: block;
   }
 
   #overlayCanvas {
-    width: 800px;
-    height: 600px;
+    width: 850px;
+    height: 640px;
     position: absolute;
     top: 0;
     left: 0;
@@ -177,6 +177,7 @@ html {
     position: relative;
     display: block;
     flex-shrink: 0;
+    max-width: 100%;
   }
 
   #shipBlueprintDiv {
@@ -262,5 +263,6 @@ html {
     #shipStatsPanel {
       max-width: 240px;
       flex-shrink: 0;
+      flex-basis: 240px;
     }
   }
