@@ -131,7 +131,10 @@
       <tr>
         <div id ="shipBluePrintLoadingDiv" style="display:none;">Loading...</div>
         <div id="shipBlueprintDiv">
-          <canvas id="shipBlueprintCanvas" class="canvas"></canvas>
+          <div id="canvasContainer" style="position: relative; display: inline-block;">
+            <canvas id="shipBlueprintCanvas" class="canvas"></canvas>
+            <canvas id="overlayCanvas" class="canvas" style="position: absolute; top: 0; left: 0; pointer-events: auto;"></canvas>
+          </div>
         </div>
       </tr>
       <tr>
@@ -141,18 +144,18 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Ion_Cannon.png" onclick="addPartToShip('Ion_Cannon')"></td>
-                  <td><img src="/static/images/parts/Ion_Disruptor.png" onclick="addPartToShip('Ion_Disruptor')"></td>
-                  <td><img src="/static/images/parts/Ion_Turret.png" onclick="addPartToShip('Ion_Turret')"></td>
-                  <td><img src="/static/images/parts/Plasma_Cannon.png" onclick="addPartToShip('Plasma_Cannon')"></td>
-                  <td><img src="/static/images/parts/Plasma_Turret.png" onclick="addPartToShip('Plasma_Turret')"></td>
+                  <td><img src="/static/images/parts/Ion_Cannon.png" class="part-image" draggable="true" onclick="addPartToShip('Ion_Cannon')" ondragstart="onDragStart(event, 'Ion_Cannon')" title="Ion Cannon" /></td>
+                  <td><img src="/static/images/parts/Ion_Disruptor.png" class="part-image" draggable="true" onclick="addPartToShip('Ion_Disruptor')" ondragstart="onDragStart(event, 'Ion_Disruptor')" title="Ion Disruptor" /></td>
+                  <td><img src="/static/images/parts/Ion_Turret.png" class="part-image" draggable="true" onclick="addPartToShip('Ion_Turret')" ondragstart="onDragStart(event, 'Ion_Turret')" title="Ion Turret" /></td>
+                  <td><img src="/static/images/parts/Plasma_Cannon.png" class="part-image" draggable="true" onclick="addPartToShip('Plasma_Cannon')" ondragstart="onDragStart(event, 'Plasma_Cannon')" title="Plasma Cannon" /></td>
+                  <td><img src="/static/images/parts/Plasma_Turret.png" class="part-image" draggable="true" onclick="addPartToShip('Plasma_Turret')" ondragstart="onDragStart(event, 'Plasma_Turret')" title="Plasma Turret" /></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Soliton_Cannon.png" onclick="addPartToShip('Soliton_Cannon')"></td>
-                  <td><img src="/static/images/parts/Soliton_Charger.png" onclick="addPartToShip('Soliton_Charger')"></td>
-                  <td><img src="/static/images/parts/Antimatter_Cannon.png" onclick="addPartToShip('Antimatter_Cannon')"></td>
-                  <td><img src="/static/images/parts/Rift_Cannon.png" onclick="addPartToShip('Rift_Cannon')"></td>
-                  <td><img src="/static/images/parts/Rift_Conductor.png" onclick="addPartToShip('Rift_Conductor')"></td>
+                  <td><img src="/static/images/parts/Soliton_Cannon.png" class="part-image" draggable="true" onclick="addPartToShip('Soliton_Cannon')" ondragstart="onDragStart(event, 'Soliton_Cannon')" title="Soliton Cannon" /></td>
+                  <td><img src="/static/images/parts/Soliton_Charger.png" class="part-image" draggable="true" onclick="addPartToShip('Soliton_Charger')" ondragstart="onDragStart(event, 'Soliton_Charger')" title="Soliton Charger" /></td>
+                  <td><img src="/static/images/parts/Antimatter_Cannon.png" class="part-image" draggable="true" onclick="addPartToShip('Antimatter_Cannon')" ondragstart="onDragStart(event, 'Antimatter_Cannon')" title="Antimatter Cannon" /></td>
+                  <td><img src="/static/images/parts/Rift_Cannon.png" class="part-image" draggable="true" onclick="addPartToShip('Rift_Cannon')" ondragstart="onDragStart(event, 'Rift_Cannon')" title="Rift Cannon" /></td>
+                  <td><img src="/static/images/parts/Rift_Conductor.png" class="part-image" draggable="true" onclick="addPartToShip('Rift_Conductor')" ondragstart="onDragStart(event, 'Rift_Conductor')" title="Rift Conductor" /></td>
                 </tr>
               </table>
             </div>
@@ -164,12 +167,12 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Electron_Computer.png" onclick="addPartToShip('Electron_Computer')"></td>
-                  <td><img src="/static/images/parts/Positron_Computer.png" onclick="addPartToShip('Positron_Computer')"></td>
+                  <td><img src="/static/images/parts/Electron_Computer.png" class="part-image" draggable="true" onclick="addPartToShip('Electron_Computer')" ondragstart="onDragStart(event, 'Electron_Computer')" title="Electron Computer" /></td>
+                  <td><img src="/static/images/parts/Positron_Computer.png" class="part-image" draggable="true" onclick="addPartToShip('Positron_Computer')" ondragstart="onDragStart(event, 'Positron_Computer')" title="Positron Computer" /></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Gluon_Computer.png" onclick="addPartToShip('Gluon_Computer')"></td>
-                  <td><img src="/static/images/parts/Axion_Computer.png" onclick="addPartToShip('Axion_Computer')"></td>
+                  <td><img src="/static/images/parts/Gluon_Computer.png" class="part-image" draggable="true" onclick="addPartToShip('Gluon_Computer')" ondragstart="onDragStart(event, 'Gluon_Computer')" title="Gluon Computer" /></td>
+                  <td><img src="/static/images/parts/Axion_Computer.png" class="part-image" draggable="true" onclick="addPartToShip('Axion_Computer')" ondragstart="onDragStart(event, 'Axion_Computer')" title="Axion Computer" /></td>
                 </tr>
               </table>
             </div>
@@ -181,15 +184,15 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Nuclear_Drive.png" onclick="addPartToShip('Nuclear_Drive')"></td>
-                  <td><img src="/static/images/parts/Fusion_Drive.png" onclick="addPartToShip('Fusion_Drive')"></td>
-                  <td><img src="/static/images/parts/Tachyon_Drive.png" onclick="addPartToShip('Tachyon_Drive')"></td>
-                  <td><img src="/static/images/parts/Transition_Drive.png" onclick="addPartToShip('Transition_Drive')"></td>
+                  <td><img src="/static/images/parts/Nuclear_Drive.png" class="part-image" draggable="true" onclick="addPartToShip('Nuclear_Drive')" ondragstart="onDragStart(event, 'Nuclear_Drive')" title="Nuclear Drive" /></td>
+                  <td><img src="/static/images/parts/Fusion_Drive.png" class="part-image" draggable="true" onclick="addPartToShip('Fusion_Drive')" ondragstart="onDragStart(event, 'Fusion_Drive')" title="Fusion Drive" /></td>
+                  <td><img src="/static/images/parts/Tachyon_Drive.png" class="part-image" draggable="true" onclick="addPartToShip('Tachyon_Drive')" ondragstart="onDragStart(event, 'Tachyon_Drive')" title="Tachyon Drive" /></td>
+                  <td><img src="/static/images/parts/Transition_Drive.png" class="part-image" draggable="true" onclick="addPartToShip('Transition_Drive')" ondragstart="onDragStart(event, 'Transition_Drive')" title="Transition Drive" /></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Conformal_Drive.png" onclick="addPartToShip('Conformal_Drive')"></td>
-                  <td><img src="/static/images/parts/Nonlinear_Drive.png" onclick="addPartToShip('Nonlinear_Drive')"></td>
-                  <td><img src="/static/images/parts/Jump_Drive.png" onclick="addPartToShip('Jump_Drive')"></td>
+                  <td><img src="/static/images/parts/Conformal_Drive.png" class="part-image" draggable="true" onclick="addPartToShip('Conformal_Drive')" ondragstart="onDragStart(event, 'Conformal_Drive')" title="Conformal Drive" /></td>
+                  <td><img src="/static/images/parts/Nonlinear_Drive.png" class="part-image" draggable="true" onclick="addPartToShip('Nonlinear_Drive')" ondragstart="onDragStart(event, 'Nonlinear_Drive')" title="Nonlinear Drive" /></td>
+                  <td><img src="/static/images/parts/Jump_Drive.png" class="part-image" draggable="true" onclick="addPartToShip('Jump_Drive')" ondragstart="onDragStart(event, 'Jump_Drive')" title="Jump Drive" /></td>
                 </tr>
               </table>
             </div>
@@ -201,13 +204,13 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Hull.png" onclick="addPartToShip('Hull')"></td>
-                  <td><img src="/static/images/parts/Improved_Hull.png" onclick="addPartToShip('Improved_Hull')"></td>
-                  <td><img src="/static/images/parts/Shard_Hull.png" onclick="addPartToShip('Shard_Hull')"></td>
+                  <td><img src="/static/images/parts/Hull.png" class="part-image" draggable="true" onclick="addPartToShip('Hull')" ondragstart="onDragStart(event, 'Hull')" title="Hull" /></td>
+                  <td><img src="/static/images/parts/Improved_Hull.png" class="part-image" draggable="true" onclick="addPartToShip('Improved_Hull')" ondragstart="onDragStart(event, 'Improved_Hull')" title="Improved Hull" /></td>
+                  <td><img src="/static/images/parts/Shard_Hull.png" class="part-image" draggable="true" onclick="addPartToShip('Shard_Hull')" ondragstart="onDragStart(event, 'Shard_Hull')" title="Shard Hull" /></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Sentient_Hull.png" onclick="addPartToShip('Sentient_Hull')"></td>
-                  <td><img src="/static/images/parts/Conifold_Field.png" onclick="addPartToShip('Conifold_Field')"></td>
+                  <td><img src="/static/images/parts/Sentient_Hull.png" class="part-image" draggable="true" onclick="addPartToShip('Sentient_Hull')" ondragstart="onDragStart(event, 'Sentient_Hull')" title="Sentient Hull" /></td>
+                  <td><img src="/static/images/parts/Conifold_Field.png" class="part-image" draggable="true" onclick="addPartToShip('Conifold_Field')" ondragstart="onDragStart(event, 'Conifold_Field')" title="Conifold Field" /></td>
                 </tr>
               </table>
             </div>
@@ -219,13 +222,13 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Flux_Missile.png" onclick="addPartToShip('Flux_Missile')"></td>
-                  <td><img src="/static/images/parts/Plasma_Missile.png" onclick="addPartToShip('Plasma_Missile')"></td>
-                  <td><img src="/static/images/parts/Soliton_Missile.png" onclick="addPartToShip('Soliton_Missile')"></td>
+                  <td><img src="/static/images/parts/Flux_Missile.png" class="part-image" draggable="true" onclick="addPartToShip('Flux_Missile')" ondragstart="onDragStart(event, 'Flux_Missile')" title="Flux Missile" /></td>
+                  <td><img src="/static/images/parts/Plasma_Missile.png" class="part-image" draggable="true" onclick="addPartToShip('Plasma_Missile')" ondragstart="onDragStart(event, 'Plasma_Missile')" title="Plasma Missile" /></td>
+                  <td><img src="/static/images/parts/Soliton_Missile.png" class="part-image" draggable="true" onclick="addPartToShip('Soliton_Missile')" ondragstart="onDragStart(event, 'Soliton_Missile')" title="Soliton Missile" /></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Ion_Missile.png" onclick="addPartToShip('Ion_Missile')"></td>
-                  <td><img src="/static/images/parts/Antimatter_Missile.png" onclick="addPartToShip('Antimatter_Missile')"></td>
+                  <td><img src="/static/images/parts/Ion_Missile.png" class="part-image" draggable="true" onclick="addPartToShip('Ion_Missile')" ondragstart="onDragStart(event, 'Ion_Missile')" title="Ion Missile" /></td>
+                  <td><img src="/static/images/parts/Antimatter_Missile.png" class="part-image" draggable="true" onclick="addPartToShip('Antimatter_Missile')" ondragstart="onDragStart(event, 'Antimatter_Missile')" title="Antimatter Missile" /></td>
                 </tr>
               </table>
             </div>
@@ -237,14 +240,14 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Gauss_Shield.png" onclick="addPartToShip('Gauss_Shield')"></td>
-                  <td><img src="/static/images/parts/Phase_Shield.png" onclick="addPartToShip('Phase_Shield')"></td>
-                  <td><img src="/static/images/parts/Flux_Shield.png" onclick="addPartToShip('Flux_Shield')"></td>
+                  <td><img src="/static/images/parts/Gauss_Shield.png" class="part-image" draggable="true" onclick="addPartToShip('Gauss_Shield')" ondragstart="onDragStart(event, 'Gauss_Shield')" title="Gauss Shield" /></td>
+                  <td><img src="/static/images/parts/Phase_Shield.png" class="part-image" draggable="true" onclick="addPartToShip('Phase_Shield')" ondragstart="onDragStart(event, 'Phase_Shield')" title="Phase Shield" /></td>
+                  <td><img src="/static/images/parts/Flux_Shield.png" class="part-image" draggable="true" onclick="addPartToShip('Flux_Shield')" ondragstart="onDragStart(event, 'Flux_Shield')" title="Flux Shield" /></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Absorption_Shield.png" onclick="addPartToShip('Absorption_Shield')"></td>
-                  <td><img src="/static/images/parts/Inversion_Shield.png" onclick="addPartToShip('Inversion_Shield')"></td>
-                  <td><img src="/static/images/parts/Morph_Shield.png" onclick="addPartToShip('Morph_Shield')"></td>
+                  <td><img src="/static/images/parts/Absorption_Shield.png" class="part-image" draggable="true" onclick="addPartToShip('Absorption_Shield')" ondragstart="onDragStart(event, 'Absorption_Shield')" title="Absorption Shield" /></td>
+                  <td><img src="/static/images/parts/Inversion_Shield.png" class="part-image" draggable="true" onclick="addPartToShip('Inversion_Shield')" ondragstart="onDragStart(event, 'Inversion_Shield')" title="Inversion Shield" /></td>
+                  <td><img src="/static/images/parts/Morph_Shield.png" class="part-image" draggable="true" onclick="addPartToShip('Morph_Shield')" ondragstart="onDragStart(event, 'Morph_Shield')" title="Morph Shield" /></td>
                 </tr>
               </table>
             </div>
@@ -256,14 +259,14 @@
             <div class="dropdown-content">
               <table>
                 <tr>
-                  <td><img src="/static/images/parts/Nuclear_Source.png" onclick="addPartToShip('Nuclear_Source')"></td>
-                  <td><img src="/static/images/parts/Fusion_Source.png" onclick="addPartToShip('Fusion_Source')"></td>
-                  <td><img src="/static/images/parts/Tachyon_Source.png" onclick="addPartToShip('Tachyon_Source')"></td>
+                  <td><img src="/static/images/parts/Nuclear_Source.png" class="part-image" draggable="true" onclick="addPartToShip('Nuclear_Source')" ondragstart="onDragStart(event, 'Nuclear_Source')" title="Nuclear Source" /></td>
+                  <td><img src="/static/images/parts/Fusion_Source.png" class="part-image" draggable="true" onclick="addPartToShip('Fusion_Source')" ondragstart="onDragStart(event, 'Fusion_Source')" title="Fusion Source" /></td>
+                  <td><img src="/static/images/parts/Tachyon_Source.png" class="part-image" draggable="true" onclick="addPartToShip('Tachyon_Source')" ondragstart="onDragStart(event, 'Tachyon_Source')" title="Tachyon Source" /></td>
                 </tr>
                 <tr>
-                  <td><img src="/static/images/parts/Zero-Point_Source.png" onclick="addPartToShip('Zero-Point_Source')"></td>
-                  <td><img src="/static/images/parts/Muon_Source.png" onclick="addPartToShip('Muon_Source')"></td>
-                  <td><img src="/static/images/parts/Hypergrid_Source.png" onclick="addPartToShip('Hypergrid_Source')"></td>
+                  <td><img src="/static/images/parts/Zero-Point_Source.png" class="part-image" draggable="true" onclick="addPartToShip('Zero-Point_Source')" ondragstart="onDragStart(event, 'Zero-Point_Source')" title="Zero-Point Source" /></td>
+                  <td><img src="/static/images/parts/Muon_Source.png" class="part-image" draggable="true" onclick="addPartToShip('Muon_Source')" ondragstart="onDragStart(event, 'Muon_Source')" title="Muon Source" /></td>
+                  <td><img src="/static/images/parts/Hypergrid_Source.png" class="part-image" draggable="true" onclick="addPartToShip('Hypergrid_Source')" ondragstart="onDragStart(event, 'Hypergrid_Source')" title="Hypergrid Source" /></td>
                 </tr>
               </table>
             </div>

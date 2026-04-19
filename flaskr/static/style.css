@@ -138,4 +138,70 @@ html {
     align-self: start;
     min-width: 10em;
   }
+
+  .part-image {
+    cursor: grab;
+    transition: outline 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .part-image.selected {
+    outline: 3px solid #377ba8;
+    outline-offset: 2px;
+    box-shadow: 0 0 8px rgba(55, 123, 168, 0.4);
+  }
+
+  .part-image:active {
+    cursor: grabbing;
+  }
+
+  #canvasContainer {
+    position: relative;
+    display: inline-block;
+  }
+
+  #overlayCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: crosshair;
+    pointer-events: auto;
+  }
+
+  #shipBlueprintDiv {
+    overflow: auto;
+    max-height: 80vh;
+  }
+
+  .part-image {
+    cursor: grab;
+    transition: outline 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .part-image.selected {
+    outline: 3px solid #377ba8;
+    outline-offset: 2px;
+    box-shadow: 0 0 8px rgba(55, 123, 168, 0.4);
+  }
+
+  .part-image:active {
+    cursor: grabbing;
+  }
+
+  #canvasContainer {
+    position: relative;
+    display: inline-block;
+  }
+
+  #overlayCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: crosshair;
+    pointer-events: auto;
+  }
+
+  #shipBlueprintDiv {
+    overflow: auto;
+    max-height: 80vh;
+  }
   
