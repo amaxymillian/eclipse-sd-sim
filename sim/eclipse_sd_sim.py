@@ -21,6 +21,8 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
+from sim.ship_parts_constants import Ship_Part, ship_parts
+
 class Ship_type(IntEnum):
     TERRAN_INTERCEPTOR = 1
     TERRAN_CRUISER = 2
@@ -39,32 +41,7 @@ class Ship_type(IntEnum):
     PLANTA_DREADNOUGHT = 15
     PLANTA_STARBASE = 16
     
-class Ship_part_names(IntEnum):
-    ABSORPTION_SHIELD = 1
-    ANTIMATTER_CANNON = 2
-    CONIFOLD_FIELD = 3
-    ELECTRON_COMPUTER = 4
-    FLUX_MISSILE = 5
-    FUSION_DRIVE = 6
-    FUSION_SOURCE = 7
-    GAUSS_SHIELD = 8
-    GLUON_COMPUTER = 9
-    HULL = 10
-    IMPROVED_HULL = 11
-    ION_CANNON = 12
-    NUCLEAR_DRIVE = 13
-    NUCLEAR_SOURCE = 14
-    PHASE_SHIELD = 15
-    PLASMA_CANNON = 16
-    PLASMA_MISSILE = 17
-    POSITRON_COMPUTER = 18
-    RIFT_CANNON = 19
-    SENTIENT_HULL = 20
-    SOLITON_CANNON = 21
-    TACHYON_DRIVE = 22
-    TACHYON_SOURCE = 23
-    TRANSITION_DRIVE = 24
-    ZEROPOINT_SOURCE = 25
+
     
     
     
@@ -72,108 +49,81 @@ class Ship_part_names(IntEnum):
 ship_types = {
     Ship_type.TERRAN_INTERCEPTOR: 
     {"slots":4, "base_initiative":2,  "bonus_energy":0, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE, None]},
     
     Ship_type.TERRAN_CRUISER: 
     {"slots":6, "base_initiative":1,  "bonus_energy":0, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
+    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, None]},
     
     Ship_type.TERRAN_DREADNOUGHT: 
     {"slots":8, "base_initiative":0,  "bonus_energy":0, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
+    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, None]},
 
     Ship_type.TERRAN_STARBASE: 
     {"slots":5, "base_initiative":4, "bonus_energy":3, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, None]},
     
     Ship_type.ERIDANI_INTERCEPTOR: 
     {"slots":4, "base_initiative":2, "bonus_energy":1, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE, None]},
     
     Ship_type.ERIDANI_CRUISER: 
     {"slots":6, "base_initiative":1, "bonus_energy":1, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
+    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, None]},
     
     Ship_type.ERIDANI_DREADNOUGHT: 
     {"slots":8, "base_initiative":0, "bonus_energy":1, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
+    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, None]},
 
     Ship_type.ERIDANI_STARBASE: 
     {"slots":5, "base_initiative":4, "bonus_energy":3, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, None]},
 
     Ship_type.ORION_INTERCEPTOR: 
     {"slots":4, "base_initiative":3, "bonus_energy":1, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE, Ship_part_names.GAUSS_SHIELD]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE, Ship_Part.GAUSS_SHIELD]},
     
     Ship_type.ORION_CRUISER: 
     {"slots":6, "base_initiative":2, "bonus_energy":2, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.GAUSS_SHIELD]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
+    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.GAUSS_SHIELD]},
     
     Ship_type.ORION_DREADNOUGHT: 
     {"slots":8, "base_initiative":1, "bonus_energy":3, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, Ship_part_names.GAUSS_SHIELD]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
+    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, Ship_Part.GAUSS_SHIELD]},
 
     Ship_type.ORION_STARBASE: 
     {"slots":5, "base_initiative":5, "bonus_energy":3, "bonus_targeting": 0,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL, 
-                        Ship_part_names.GAUSS_SHIELD]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, 
+                        Ship_Part.GAUSS_SHIELD]},
 
     Ship_type.PLANTA_INTERCEPTOR: 
     {"slots":3, "base_initiative":2, "bonus_energy":2, "bonus_targeting": 1,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE]},
     
     Ship_type.PLANTA_CRUISER: 
     {"slots":5, "base_initiative":0, "bonus_energy":2, "bonus_targeting": 1,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.HULL, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
+    Ship_Part.HULL, None]},
     
     Ship_type.PLANTA_DREADNOUGHT: 
     {"slots":7, "base_initiative":0, "bonus_energy":2, "bonus_targeting": 1,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ION_CANNON, Ship_part_names.NUCLEAR_DRIVE, Ship_part_names.NUCLEAR_SOURCE,
-    Ship_part_names.HULL, Ship_part_names.HULL, None]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
+    Ship_Part.HULL, Ship_Part.HULL, None]},
 
     Ship_type.PLANTA_STARBASE: 
     {"slots":4, "base_initiative":2, "bonus_energy":5, "bonus_targeting": 1,
-    "installed_parts": [Ship_part_names.ION_CANNON, Ship_part_names.ELECTRON_COMPUTER, Ship_part_names.HULL, Ship_part_names.HULL]},
+    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL]},
 
 
     }
 
-# Need a data structure to represent the various tech tiles 
-ship_parts = {
-    Ship_part_names.ABSORPTION_SHIELD: {"type": "shield", "shielding": -1, "energy": 4},
-    Ship_part_names.ANTIMATTER_CANNON: {"type": "cannon", "damage": 4, "energy": -4},
-    Ship_part_names.CONIFOLD_FIELD: {"type":"hull", "armor":3, "energy": -2},
-    Ship_part_names.ELECTRON_COMPUTER: {"type": "computer", "targeting": 1, "energy": 0},
-    Ship_part_names.FLUX_MISSILE: {"type": "missile", "damage": 1, "times_fired": 2, "energy": 0}, 
-    Ship_part_names.FUSION_DRIVE: {"type": "drive", "initiative": 2, "energy": -2},
-    Ship_part_names.FUSION_SOURCE: {"type": "source", "energy": 6},
-    Ship_part_names.GAUSS_SHIELD: {"type": "shield", "shielding": -1, "energy": 0},
-    Ship_part_names.GLUON_COMPUTER: {"type": "computer", "targeting": 3, "energy":-2},
-    Ship_part_names.HULL: {"type":"hull", "armor":1, "energy":0},
-    Ship_part_names.IMPROVED_HULL: {"type":"hull", "armor":2, "energy":0},
-    Ship_part_names.ION_CANNON: {"type": "cannon", "damage": 1, "energy": -1},
-    Ship_part_names.NUCLEAR_DRIVE: {"type": "drive", "initiative": 1, "energy": -1},
-    Ship_part_names.NUCLEAR_SOURCE: {"type": "source", "energy": 3},
-    Ship_part_names.PHASE_SHIELD: {"type": "shield", "shielding": -2, "energy": -1},
-    Ship_part_names.PLASMA_CANNON: {"type": "cannon", "damage": 2, "energy": -2},
-    Ship_part_names.PLASMA_MISSILE: {"type": "missile", "damage": 2, "times_fired": 2, "energy": -1}, 
-    Ship_part_names.POSITRON_COMPUTER: {"type": "computer", "targeting": 2, "energy": -1},
-    Ship_part_names.RIFT_CANNON: {"type": "cannon", "damage": "RIFT_DAMAGE", "energy": -2},
-    Ship_part_names.SENTIENT_HULL: {"type":"hull", "armor":1, "targeting": 1, "energy":0},
-    Ship_part_names.SOLITON_CANNON: {"type": "cannon", "damage": 3, "energy": -3},
-    Ship_part_names.TACHYON_DRIVE: {"type": "drive", "initiative": 3, "energy": -3},
-    Ship_part_names.TACHYON_SOURCE: {"type": "source", "energy": 9},
-    Ship_part_names.TRANSITION_DRIVE: {"type": "drive", "initiative": 0, "energy": 0},
-    Ship_part_names.ZEROPOINT_SOURCE: {"type": "source", "energy": 12}
-}
+
 
 
 # TODO: Create a 'Ship_Class' class to store the ship_parts so that instances of 'Ship' are really about particular
@@ -779,7 +729,7 @@ def main():
     test_ship_2 = Ship(Ship_type.TERRAN_DREADNOUGHT, 2)
 
 
-    test_ship_2.add_part(Ship_part_names.NUCLEAR_DRIVE, 3)
+    test_ship_2.add_part(Ship_Part.NUCLEAR_DRIVE, 3)
     #print(test_ship_2)
 
 
