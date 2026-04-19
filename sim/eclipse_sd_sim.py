@@ -23,6 +23,12 @@ logger.addHandler(ch)
 
 from sim.ship_parts_constants import Ship_Part, ship_parts
 
+class PlacementFailureReason(IntEnum):
+    SUCCESS = 0
+    INSUFFICIENT_ENERGY = 1
+    REMOVES_ONLY_DRIVE = 2
+
+
 class Ship_type(IntEnum):
     TERRAN_INTERCEPTOR = 1
     TERRAN_CRUISER = 2
@@ -147,15 +153,27 @@ class Ship:
         self.update_shielding()
 
         
-    def add_part(self, part_name, part_position):
-        #TODO - Check if we have enough energy to mount this part, if not, throw an error
-        
-        
-        #TODO - Check if adding this part removes our last drive and we're not a starbase - if so, throw an error
-        
+    def add_part(self, part_name, part_position) -> tuple[bool, PlacementFailureReason]:
+        part_energy = ship_parts[part_name]['energy']
+        old_part = self.ship_parts[part_position]
+        old_energy = ship_parts[old_part]['energy'] if old_part is not None else 0
+        new_available_energy = self.get_avail_energy() - old_energy + part_energy
+        if new_available_energy < 0:
+            return (False, PlacementFailureReason.INSUFFICIENT_ENERGY)
+
+        drive_count = sum(1 for p in self.ship_parts if p is not None and ship_parts[p]['type'] == 'drive')
+        if old_part is not None and ship_parts[old_part]['type'] == 'drive':
+            drive_count -= 1
+        if ship_parts[part_name]['type'] == 'drive':
+            drive_count += 1
+        is_starbase = 'STARBASE' in self.ship_type.name
+        if not is_starbase and drive_count < 1:
+            return (False, PlacementFailureReason.REMOVES_ONLY_DRIVE)
+
         self.ship_parts[part_position] = part_name
         self.update_init()
         self.recalc_hp()
+        return (True, PlacementFailureReason.SUCCESS)
         
     def remove_part(self, part_position):
         #Removing a part resets the part to its default configuration - may not need this
@@ -171,7 +189,9 @@ class Ship:
     def get_avail_energy(self) -> int:
         energy = 0
         for part in self.ship_parts:
-                energy += ship_parts[part]['energy']
+            if part is None:
+                continue
+            energy += ship_parts[part]['energy']
             
         return energy
           
