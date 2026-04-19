@@ -1,6 +1,24 @@
-#Exclude venv 
-.venv
+# Virtual environment
+.venv/
 
-sim/Scratch.ipynb
-.gitignore
-sim/.ipynb_checkpoints/Scratch-checkpoint.ipynb
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# uv
+uv.lock
+
+# Jupyter
+*.ipynb
+.ipynb_checkpoints/
+
+# Flask instance
+instance/
+
+# OS
+.DS_Store
