@@ -197,27 +197,25 @@ def create_app(test_config=None):
 
     @app.route('/api/ship_type_grid/<path:ship_type_name>')
     def get_ship_type_grid(ship_type_name):
-        """Return hardcoded slot grid positions for drawing the slot overlay.
+        """Return hardcoded slot pixel positions for drawing the slot overlay.
 
-        Computes pixel coordinates for each slot based on the blueprint
-        image dimensions and the hardcoded grid layout. Replaces the
-        fragile pixel-based slot detection.
+        Returns absolute pixel coordinates for each slot, measured from
+        the top-left corner of the blueprint image. Positions were obtained
+        by analyzing the outline colors in the actual blueprint PNG files.
 
         Args:
             ship_type_name: Ship type name, e.g. 'Terran_Interceptor'.
 
         Response JSON:
             slots (list[dict]): Each dict has slot_type, default_part,
-                x, y, width, height, grid_row, grid_col
+                x, y, width, height
             slot_types (list[str]): Slot type for each slot index
             slot_labels (list[str|None]): Human-readable label for each slot
         """
         from sim.ship_constants import Ship_type
         from sim.slot_definitions import (
-            get_slot_positions,
             get_slot_definitions,
             SLOT_TYPE_NAMES,
-            BLUEPRINT_SHIP_TYPE_MAP,
         )
 
         blueprint_name = ship_type_name
@@ -232,27 +230,12 @@ def create_app(test_config=None):
 
         blueprint_int = int(ship_type_enum)
 
-        try:
-            from PIL import Image
-            import os
-            image_path = os.path.join(
-                os.path.dirname(__file__),
-                "static", "images", "blueprints", blueprint_name + ".png"
-            )
-            if os.path.isfile(image_path):
-                img = Image.open(image_path)
-                bw, bh = img.size
-            else:
-                bw, bh = 800, 600
-        except Exception:
-            bw, bh = 800, 600
+        positions = get_slot_definitions(blueprint_int)
 
-        positions = get_slot_positions(blueprint_int, bw, bh)
+        # Sort positions by pixel y-coordinate, then x-coordinate
+        positions_sorted = sorted(positions, key=lambda p: (p["y"], p["x"]))
 
-        # Sort positions by grid position (top-to-bottom, left-to-right)
-        positions_sorted = sorted(positions, key=lambda p: (p["grid_row"], p["grid_col"]))
-
-        # Build response in grid-sorted order
+        # Build response in pixel-sorted order
         result_slots = []
         slot_types = []
         slot_labels = []
@@ -266,8 +249,6 @@ def create_app(test_config=None):
                 "y": pos["y"],
                 "width": pos["width"],
                 "height": pos["height"],
-                "grid_row": pos["grid_row"],
-                "grid_col": pos["grid_col"],
             })
             slot_types.append(pos["slot_type"])
             slot_labels.append(SLOT_TYPE_NAMES.get(pos["slot_type"]))

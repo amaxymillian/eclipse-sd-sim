@@ -89,8 +89,8 @@ function loadGridSlots(canvas, ctx, blueprintName, callback) {
                         invalidReason: null,
                         slotType: s.slot_type,
                         defaultPart: s.default_part,
-                        gridRow: s.grid_row,
-                        gridCol: s.grid_col,
+                        gridRow: s.grid_row ?? null,
+                        gridCol: s.grid_col ?? null,
                     });
                 }
             }
