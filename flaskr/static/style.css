@@ -127,6 +127,17 @@ html {
     resize: vertical;
   }
 
+  .nav-buttons {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .nav-buttons .dropdown {
+    margin: 0;
+  }
+
   .canvas {
     height: 95%;
     width: 95%;

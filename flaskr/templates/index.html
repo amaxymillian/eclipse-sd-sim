@@ -33,6 +33,15 @@
     min-width: 160px;
     box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     z-index: 1000;
+    top: 100%;
+    left: 0;
+  }
+
+  /* Dropdown that opens upward when near bottom of viewport */
+  .dropdown-content.upward {
+    top: auto;
+    bottom: 100%;
+    box-shadow: 0px -8px 16px 0px rgba(0,0,0,0.2);
   }
 
   /* Links inside the dropdown */
@@ -71,28 +80,24 @@
     <h1>Eclipse SD Sim</h1>>
   </header>
   
-  <table>
-    <tr>
-      <div class="dropdown">
-        <button class="dropbtn">Ship Designer</button>
-        <div class="dropdown-content">
-          <a href="#" onclick="showPrimaryDiv('shipDesigner')">New...</a>
-          <a href="#">Open Saved Ship</a>
-          <a href="#">Save Current Ship </a>
-        </div>
+  <div class="nav-buttons">
+    <div class="dropdown">
+      <button class="dropbtn">Ship Designer</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="showPrimaryDiv('shipDesigner')">New...</a>
+        <a href="#">Open Saved Ship</a>
+        <a href="#">Save Current Ship </a>
       </div>
-    </tr>
-    <tr>
-      <div class="dropdown">
-        <button class="dropbtn">Battle Simulator</button>
-        <div class="dropdown-content">
-          <a href="#" onclick="showPrimaryDiv('battleSimulator')">New...</a>
-          <a href="#">Open Saved Battle</a>
-          <a href="#">Save Current Battle </a>
-        </div>
+    </div>
+    <div class="dropdown">
+      <button class="dropbtn">Battle Simulator</button>
+      <div class="dropdown-content">
+        <a href="#" onclick="showPrimaryDiv('battleSimulator')">New...</a>
+        <a href="#">Open Saved Battle</a>
+        <a href="#">Save Current Battle </a>
       </div>
-    </tr>
-  </table>
+    </div>
+  </div>
   
   <div id="shipDesigner" style="display:none;">
     <div class="dropdown">
@@ -297,3 +302,5 @@
   {% endfor %}
   {% block content %}{% endblock %}
 </section>
+
+<div id="dropdown-portal" style="width: 0; height: 0;"></div>
