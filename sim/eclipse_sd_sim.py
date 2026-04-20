@@ -1,3 +1,9 @@
+"""Core battle simulation engine for Eclipse: Second Dawn for the Galaxy.
+
+Contains the Ship and Battle_sim classes for Monte Carlo battle simulation,
+along with part placement validation and weapon fire resolution.
+"""
+
 import random, os
 import json, jsonpickle
 import pandas as pd
@@ -22,6 +28,8 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 from sim.ship_parts_constants import Ship_Part, ship_parts
+from sim.ship_constants import Ship_type, ship_types
+
 
 def _part_name_to_enum(part_name):
     """Convert part name string to Ship_Part enum.
@@ -42,111 +50,33 @@ def _part_name_to_enum(part_name):
             return sp
     raise ValueError(f"Unknown part name: {part_name}")
 
-class PlacementFailureReason(IntEnum):
-    SUCCESS = 0
-    INSUFFICIENT_ENERGY = 1
-    REMOVES_ONLY_DRIVE = 2
+
+def _is_drive(part):
+    """Check if a part is a drive type.
+    
+    Args:
+        part: A Ship_Part enum value or None.
+        
+    Returns:
+        True if the part is a drive, False otherwise or if None.
+    """
+    if part is None:
+        return False
+    return ship_parts.get(part, {}).get("type") == "drive"
 
 
-class Ship_type(IntEnum):
-    TERRAN_INTERCEPTOR = 1
-    TERRAN_CRUISER = 2
-    TERRAN_DREADNOUGHT = 3
-    TERRAN_STARBASE = 4
-    ERIDANI_INTERCEPTOR = 5
-    ERIDANI_CRUISER = 6
-    ERIDANI_DREADNOUGHT = 7
-    ERIDANI_STARBASE = 8
-    ORION_INTERCEPTOR = 9
-    ORION_CRUISER = 10
-    ORION_DREADNOUGHT = 11
-    ORION_STARBASE = 12
-    PLANTA_INTERCEPTOR = 13
-    PLANTA_CRUISER = 14
-    PLANTA_DREADNOUGHT = 15
-    PLANTA_STARBASE = 16
+def _part_type(part):
+    """Get the type string of a part.
     
-
-    
-    
-    
-# Need a data structure to represent ship configurations
-ship_types = {
-    Ship_type.TERRAN_INTERCEPTOR: 
-    {"slots":4, "base_initiative":2,  "bonus_energy":0, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE, None]},
-    
-    Ship_type.TERRAN_CRUISER: 
-    {"slots":6, "base_initiative":1,  "bonus_energy":0, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, None]},
-    
-    Ship_type.TERRAN_DREADNOUGHT: 
-    {"slots":8, "base_initiative":0,  "bonus_energy":0, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, None]},
-
-    Ship_type.TERRAN_STARBASE: 
-    {"slots":5, "base_initiative":4, "bonus_energy":3, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, None]},
-    
-    Ship_type.ERIDANI_INTERCEPTOR: 
-    {"slots":4, "base_initiative":2, "bonus_energy":1, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE, None]},
-    
-    Ship_type.ERIDANI_CRUISER: 
-    {"slots":6, "base_initiative":1, "bonus_energy":1, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, None]},
-    
-    Ship_type.ERIDANI_DREADNOUGHT: 
-    {"slots":8, "base_initiative":0, "bonus_energy":1, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, None]},
-
-    Ship_type.ERIDANI_STARBASE: 
-    {"slots":5, "base_initiative":4, "bonus_energy":3, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, None]},
-
-    Ship_type.ORION_INTERCEPTOR: 
-    {"slots":4, "base_initiative":3, "bonus_energy":1, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE, Ship_Part.GAUSS_SHIELD]},
-    
-    Ship_type.ORION_CRUISER: 
-    {"slots":6, "base_initiative":2, "bonus_energy":2, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.GAUSS_SHIELD]},
-    
-    Ship_type.ORION_DREADNOUGHT: 
-    {"slots":8, "base_initiative":1, "bonus_energy":3, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-    Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, Ship_Part.GAUSS_SHIELD]},
-
-    Ship_type.ORION_STARBASE: 
-    {"slots":5, "base_initiative":5, "bonus_energy":3, "bonus_targeting": 0,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL, 
-                        Ship_Part.GAUSS_SHIELD]},
-
-    Ship_type.PLANTA_INTERCEPTOR: 
-    {"slots":3, "base_initiative":2, "bonus_energy":2, "bonus_targeting": 1,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE]},
-    
-    Ship_type.PLANTA_CRUISER: 
-    {"slots":5, "base_initiative":0, "bonus_energy":2, "bonus_targeting": 1,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-    Ship_Part.HULL, None]},
-    
-    Ship_type.PLANTA_DREADNOUGHT: 
-    {"slots":7, "base_initiative":0, "bonus_energy":2, "bonus_targeting": 1,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-    Ship_Part.HULL, Ship_Part.HULL, None]},
-
-    Ship_type.PLANTA_STARBASE: 
-    {"slots":4, "base_initiative":2, "bonus_energy":5, "bonus_targeting": 1,
-    "installed_parts": [Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL, Ship_Part.HULL]},
-
-
-    }
+    Args:
+        part: A Ship_Part enum value or None.
+        
+    Returns:
+        The part type string (e.g. 'drive', 'cannon', 'hull'), or None.
+    """
+    if part is None:
+        return None
+    return ship_parts.get(part, {}).get("type")
 
 
 
@@ -172,8 +102,12 @@ class Ship:
         self.update_shielding()
 
         
-    def add_part(self, part_name, part_position) -> tuple[bool, PlacementFailureReason]:
+    def add_part(self, part_name, part_position) -> tuple[bool, str]:
         """Add a part to a slot on this ship.
+
+        Validates energy constraints and drive requirements before placement.
+        Returns a tuple of (success, message) where success is False if any
+        constraint is violated and message describes the failure reason.
 
         Args:
             part_name: The part to add. Accepts either a Ship_Part enum value
@@ -181,7 +115,9 @@ class Ship:
             part_position: The slot index to place the part in.
 
         Returns:
-            Tuple of (success: bool, reason: PlacementFailureReason).
+            Tuple of (success: bool, message: str). On success, message is
+            an empty string. On failure, message describes why placement
+            was rejected.
         """
         part_enum = _part_name_to_enum(part_name)
         part_energy = ship_parts[part_enum].get('energy', 0)
@@ -189,21 +125,28 @@ class Ship:
         old_energy = ship_parts[old_part].get('energy', 0) if old_part is not None else 0
         new_available_energy = self.get_avail_energy() - old_energy + part_energy
         if new_available_energy < 0:
-            return (False, PlacementFailureReason.INSUFFICIENT_ENERGY)
+            return (False, f"Insufficient energy. Placing {part_enum.name} would require {abs(new_available_energy)} more energy available.")
 
-        drive_count = sum(1 for p in self.ship_parts if p is not None and ship_parts[p].get('type') == 'drive')
-        if old_part is not None and ship_parts[old_part].get('type') == 'drive':
-            drive_count -= 1
-        if ship_parts[part_enum].get('type') == 'drive':
-            drive_count += 1
         is_starbase = 'STARBASE' in self.ship_type.name
-        if not is_starbase and drive_count < 1:
-            return (False, PlacementFailureReason.REMOVES_ONLY_DRIVE)
+        old_is_drive = _is_drive(old_part)
+        new_is_drive = _is_drive(part_enum)
+
+        # Count current drives (not counting the old part if it's a drive)
+        drive_count = sum(1 for p in self.ship_parts if p is not None and _is_drive(p))
+        if old_is_drive:
+            drive_count -= 1
+
+        # Reject if the placement would leave the ship with no drives
+        if not new_is_drive and drive_count < 1:
+            if old_is_drive:
+                return (False, f"Cannot remove the last drive. Replacing {old_part.name} with {part_enum.name} would leave the ship with no drive.")
+            else:
+                return (False, f"Cannot replace {old_part.name} with {part_enum.name}. The ship would have no drive installed.")
 
         self.ship_parts[part_position] = part_enum
         self.update_init()
         self.recalc_hp()
-        return (True, PlacementFailureReason.SUCCESS)
+        return (True, "")
         
     def remove_part(self, part_position):
         #Removing a part resets the part to its default configuration - may not need this

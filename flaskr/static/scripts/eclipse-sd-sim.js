@@ -19,25 +19,8 @@ var invalidSlotsForSelectedPart = new Set();
 // State: last validation result for user feedback
 var lastValidationFeedback = null;
 
-// Ship types enum (unused but kept for reference)
-const ShipType = {
-    TERRAN_INTERCEPTOR: "Terran_Interceptor",
-    TERRAN_CRUISER: "Terran_Cruiser",
-    TERRAN_DREADNOUGHT: "Terran_Dreadnought",
-    TERRAN_STARBASE: "Terran_Starbase",
-    ERIDANI_INTERCEPTOR: "Eridani_Interceptor",
-    ERIDANI_CRUISER: "Eridani_Cruiser",
-    ERIDANI_DREADNOUGHT: "Eridani_Dreadnought",
-    ERIDANI_STARBASE: "Eridani_Starbase",
-    ORION_INTERCEPTOR: "Orion_Interceptor",
-    ORION_CRUISER: "Orion_Cruiser",
-    ORION_DREADNOUGHT: "Orion_Dreadnought",
-    ORION_STARBASE: "Orion_Starbase",
-    PLANTA_INTERCEPTOR: "Planta_Interceptor",
-    PLANTA_CRUISER: "Planta_Cruiser",
-    PLANTA_DREADNOUGHT: "Planta_Dreadnought",
-    PLANTA_STARBASE: "Planta_Starbase"
-};
+// Ship types served by the API - removed from frontend
+// See /api/ship_types/<ship_type_name> for dynamic data
 
 const WHITE_THRESHOLD = 150;
 
@@ -77,121 +60,49 @@ function deduplicateSlots(slots) {
     return result;
 }
 
-function detectBlueprintSlots(canvas, ctx, blueprintName) {
-    console.log('detectBlueprintSlots starting for:', blueprintName, 'canvas:', canvas.width, 'x', canvas.height);
-    try {
-        var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    } catch(e) {
-        console.error('getImageData failed:', e);
-        blueprintSlotBoxes[blueprintName] = [];
-        return [];
-    }
-    var data = imageData.data;
-    var width = canvas.width;
-    var height = canvas.height;
-    var minDim = Math.min(width, height);
-    var minRunLen = Math.max(10, minDim * 0.03);
-    var minSlotW = Math.max(15, minDim * 0.05);
-    var minSlotH = Math.max(15, minDim * 0.05);
-    var maxSlotW = width * 0.5;
-    var maxSlotH = height * 0.5;
+function loadGridSlots(canvas, ctx, blueprintName, callback) {
+    console.log('loadGridSlots starting for:', blueprintName, 'canvas:', canvas.width, 'x', canvas.height);
+    var url = '/api/ship_type_grid/' + blueprintName;
+    console.log('Fetching grid data from:', url);
 
-    // Step 1: Find all horizontal white pixel runs per row
-    var hRuns = [];
-    for (var row = 0; row < height; row++) {
-        var runStart = -1;
-        for (var col = 0; col < width; col++) {
-            var idx = (row * width + col) * 4;
-            var isWhite = data[idx] > WHITE_THRESHOLD &&
-                          data[idx+1] > WHITE_THRESHOLD &&
-                          data[idx+2] > WHITE_THRESHOLD;
-            if (isWhite && runStart === -1) {
-                runStart = col;
-            } else if (!isWhite && runStart !== -1) {
-                if (col - runStart >= minRunLen) {
-                    hRuns.push({row: row, startX: runStart, endX: col - 1});
-                }
-                runStart = -1;
+    fetch(url)
+        .then(function(response) {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status + ' for ' + url);
             }
-        }
-        if (runStart !== -1 && width - runStart >= minRunLen) {
-            hRuns.push({row: row, startX: runStart, endX: width - 1});
-        }
-    }
-
-    // Step 2: Group horizontal runs into line segments (adjacent rows with overlapping x-range)
-    var hLines = [];
-    var used = new Array(hRuns.length).fill(false);
-    for (var i = 0; i < hRuns.length; i++) {
-        if (used[i]) continue;
-        var line = {topRow: hRuns[i].row, bottomRow: hRuns[i].row,
-                    leftX: hRuns[i].startX, rightX: hRuns[i].endX};
-        used[i] = true;
-        for (var j = i + 1; j < hRuns.length; j++) {
-            if (used[j]) continue;
-            if (Math.abs(hRuns[j].row - line.bottomRow) <= 2) {
-                var overlap = Math.min(line.rightX, hRuns[j].endX) - Math.max(line.leftX, hRuns[j].startX);
-                if (overlap >= minRunLen * 0.5) {
-                    line.leftX = Math.min(line.leftX, hRuns[j].startX);
-                    line.rightX = Math.max(line.rightX, hRuns[j].endX);
-                    line.bottomRow = hRuns[j].row;
-                    used[j] = true;
+            return response.json();
+        })
+        .then(function(data) {
+            console.log('Grid data received:', data);
+            var slots = [];
+            if (data.slots) {
+                for (var i = 0; i < data.slots.length; i++) {
+                    var s = data.slots[i];
+                    slots.push({
+                        x: s.x,
+                        y: s.y,
+                        w: s.width,
+                        h: s.height,
+                        occupied: false,
+                        partName: null,
+                        invalid: false,
+                        invalidReason: null,
+                        slotType: s.slot_type,
+                        defaultPart: s.default_part,
+                        gridRow: s.grid_row,
+                        gridCol: s.grid_col,
+                    });
                 }
             }
-        }
-        hLines.push(line);
-    }
-
-    // Step 3: Find rectangles by pairing horizontal lines with matching edges
-    var slots = [];
-    for (var i = 0; i < hLines.length; i++) {
-        for (var j = i + 1; j < hLines.length; j++) {
-            var top = hLines[i], bottom = hLines[j];
-            if (bottom.topRow - top.bottomRow < minSlotH * 0.5) continue;
-
-            var leftX = Math.max(top.leftX, bottom.leftX);
-            var rightX = Math.min(top.rightX, bottom.rightX);
-            var slotW = rightX - leftX;
-            var slotH = bottom.bottomRow - top.topRow;
-
-            if (slotW < minSlotW || slotW > maxSlotW) continue;
-            if (slotH < minSlotH || slotH > maxSlotH) continue;
-
-            // Check if top and bottom edges have enough white pixels
-            var topEdgeOK = verifyHorizontalEdge(data, width, top.topRow, leftX, rightX, WHITE_THRESHOLD);
-            var bottomEdgeOK = verifyHorizontalEdge(data, width, bottom.bottomRow, leftX, rightX, WHITE_THRESHOLD);
-            if (!topEdgeOK || !bottomEdgeOK) continue;
-
-            // Verify left and right edges have white pixels connecting top and bottom
-            var leftEdgeOK = verifyVerticalEdge(data, width, leftX, top.topRow, bottom.bottomRow, WHITE_THRESHOLD);
-            var rightEdgeOK = verifyVerticalEdge(data, width, rightX, top.topRow, bottom.bottomRow, WHITE_THRESHOLD);
-            if (!leftEdgeOK || !rightEdgeOK) continue;
-
-            slots.push({x: leftX, y: top.topRow, w: slotW, h: slotH, occupied: false, partName: null, invalid: false, invalidReason: null});
-        }
-    }
-
-    // Deduplicate overlapping detections
-    slots = deduplicateSlots(slots);
-
-    // Filter: keep slots in reasonable positions (skip the very top where the ship name/header might be)
-    var filteredSlots = [];
-    for (var k = 0; k < slots.length; k++) {
-        if (slots[k].y > height * 0.08) {
-            filteredSlots.push(slots[k]);
-        }
-    }
-
-    // If too many slots detected, keep only the largest ones
-    if (filteredSlots.length > 12) {
-        filteredSlots.sort(function(a, b) { return (b.w * b.h) - (a.w * a.h); });
-        filteredSlots = filteredSlots.slice(0, 10);
-    }
-
-    blueprintSlotBoxes[blueprintName] = filteredSlots;
-    console.log('[DIAG] detectBlueprintSlots found', filteredSlots.length, 'slots for', blueprintName);
-    console.log('[DIAG] detectBlueprintSlots slot details:', JSON.stringify(filteredSlots.map(function(s) { return {x: s.x, y: s.y, w: s.w, h: s.h}; })));
-    return filteredSlots;
+            blueprintSlotBoxes[blueprintName] = slots;
+            console.log('[DIAG] loadGridSlots found', slots.length, 'slots for', blueprintName);
+            if (callback) callback(slots);
+        })
+        .catch(function(e) {
+            console.error('loadGridSlots failed:', e);
+            blueprintSlotBoxes[blueprintName] = [];
+            if (callback) callback([]);
+        });
 }
 
 function verifyHorizontalEdge(data, width, row, startX, endX, threshold) {
@@ -263,6 +174,9 @@ function drawOverlay() {
             if (s.occupied && s.partName) {
                 drawPartImage(ctx, s.partName, s.x + 2, s.y + 2, s.w - 4, s.h - 4);
             }
+
+            // Draw slot type label
+            drawSlotLabelText(ctx, s, i);
         }
     } catch(e) {
         console.error('drawOverlay error:', e);
@@ -350,7 +264,7 @@ function removePart(slotIndex) {
 
 // ===== User Feedback =====
 
-function showPlacementFeedback(reason) {
+function showPlacementFeedback(message) {
     // Show a brief flash message near the canvas
     var feedbackEl = document.getElementById('placementFeedback');
     if (!feedbackEl) {
@@ -366,19 +280,12 @@ function showPlacementFeedback(reason) {
         }
     }
 
-    var message = 'Cannot place part here: ';
-    switch(reason) {
-        case 'INSUFFICIENT_ENERGY':
-            message += 'Insufficient energy. This part would leave the ship with negative energy.';
-            break;
-        case 'REMOVES_ONLY_DRIVE':
-            message += 'Cannot remove the last drive. The ship needs at least one drive to function.';
-            break;
-        default:
-            message += 'This part cannot be installed in this slot.';
+    if (message) {
+        feedbackEl.textContent = message;
+    } else {
+        feedbackEl.textContent = 'Cannot place part here: operation rejected by backend validation.';
     }
 
-    feedbackEl.textContent = message;
     feedbackEl.style.opacity = '1';
 
     // Fade out after 3 seconds
@@ -395,7 +302,6 @@ function validatePartPlacement(partName) {
     }
 
     var typeName = currentBlueprintName;
-    // Validate the Ship_Part enum name matches
     var response = fetch('/api/validate_part_placement', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -408,7 +314,7 @@ function validatePartPlacement(partName) {
 
         invalidSlotsForSelectedPart = new Set(data.invalid_slots || []);
 
-        // Update slot invalid states
+        // Update slot invalid states using generic messages from backend
         for (var i = 0; i < slots.length; i++) {
             if (invalidSlotsForSelectedPart.has(i)) {
                 slots[i].invalid = true;
@@ -647,16 +553,19 @@ function selectBlueprint(blueprintName) {
 
             currentBlueprintName = blueprintName;
             blueprintSlotBoxes[blueprintName] = [];
-            detectBlueprintSlots(shipBlueprintCanvas, ctx, blueprintName);
-
-            drawOverlay();
-            loadShipData(function() {
-                console.log('[DIAG] Ship data loaded successfully');
-                updateShipStats();
+            loadGridSlots(shipBlueprintCanvas, ctx, blueprintName, function(slots) {
+                drawOverlay();
+                loadShipTypeInfo(blueprintName, function() {
+                    console.log('Ship type info loaded for', blueprintName);
+                    updateSlotLabels();
+                    loadShipData(function() {
+                        console.log('[DIAG] Ship data loaded successfully');
+                        updateShipStats();
+                    });
+                });
+                loadingDiv.style.display = "none";
+                console.log('Blueprint displayed successfully');
             });
-
-            loadingDiv.style.display = "none";
-            console.log('Blueprint displayed successfully');
         } catch(e) {
             console.error('Error drawing blueprint:', e);
             loadingDiv.style.display = "none";
@@ -752,6 +661,8 @@ function addPartToShip(partName) {
 var shipPartsData = {};
 var shipTypesData = {};
 var currentShipStats = null;
+var currentShipTypeInfo = null;
+var currentSlotMapping = {};
 
 function loadShipData(callback) {
     fetch('/api/ship_parts')
@@ -767,6 +678,25 @@ function loadShipData(callback) {
         })
         .catch(function(err) {
             console.error('Failed to load ship data:', err);
+        });
+}
+
+function loadShipTypeInfo(blueprintName, callback) {
+    fetch('/api/ship_types/' + blueprintName)
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            currentShipTypeInfo = data;
+            return fetch('/api/ship_type_mapping/' + blueprintName);
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            currentSlotMapping = data.mapping || {};
+            if (callback) callback();
+        })
+        .catch(function(err) {
+            console.error('Failed to load ship type info for ' + blueprintName + ':', err);
+            currentShipTypeInfo = null;
+            currentSlotMapping = {};
         });
 }
 
@@ -871,7 +801,8 @@ function updateInstalledPartsList() {
     var parts = [];
     for (var i = 0; i < slots.length; i++) {
         if (slots[i].partName) {
-            parts.push('Slot ' + (i + 1) + ': ' + slots[i].partName);
+            var slotLabel = slots[i].partType ? ' (' + slots[i].partType + ')' : '';
+            parts.push('Slot ' + (i + 1) + ': ' + slots[i].partName + slotLabel);
         }
     }
 
@@ -889,6 +820,51 @@ function updateShipStats() {
 }
 
 // ===== End Ship Statistics =====
+
+// ===== Slot Label Display =====
+
+function updateSlotLabels() {
+    if (!currentBlueprintName || !currentShipTypeInfo) return;
+
+    var slots = blueprintSlotBoxes[currentBlueprintName];
+    if (!slots) return;
+
+    var partTypes = currentShipTypeInfo.part_types || [];
+    var slotLabels = currentShipTypeInfo.slot_labels || [];
+
+    for (var i = 0; i < slots.length; i++) {
+        if (slots[i].slotType) {
+            slots[i].partType = slots[i].slotType;
+        } else if (i < partTypes.length) {
+            slots[i].partType = partTypes[i];
+        }
+        if (slotLabels[i] !== undefined) {
+            slots[i].slotLabel = slotLabels[i] || null;
+        }
+    }
+
+    drawOverlay();
+}
+
+function drawSlotLabelText(ctx, slot, index) {
+    if (!slot.partType) return;
+
+    var label = slot.partType.charAt(0).toUpperCase() + slot.partType.slice(1);
+    ctx.font = 'bold ' + Math.max(8, slot.w / 6) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    // Draw label with dark outline for readability
+    var textX = slot.x + slot.w / 2;
+    var textY = slot.y + slot.h - 4;
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.strokeText(label, textX, textY);
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.fillText(label, textX, textY);
+}
+
+// ===== End Slot Label Display =====
 
 // Initialize overlay handlers when the page loads
 document.addEventListener('DOMContentLoaded', function() {
