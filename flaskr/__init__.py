@@ -259,6 +259,69 @@ def create_app(test_config=None):
             'slot_labels': slot_labels,
         })
 
+    @app.route('/api/initial_stats/<path:ship_type_name>')
+    def get_initial_stats(ship_type_name):
+        """Return initial ship stats computed by the backend Ship class with default parts.
+
+        Creates a temporary Ship instance with default parts for the given
+        ship type and returns its computed stats. Also returns the installed
+        part names so the frontend can populate slot data.
+
+        Args:
+            ship_type_name: Ship type name, e.g. 'Terran_Interceptor'.
+
+        Response JSON:
+            stats (dict): Computed ship stats (shielding, energy, available_energy,
+                initiative, armor, targeting, hp)
+            installed_parts (list[str|None]): Part PNG filenames for each slot index
+        """
+        from sim.eclipse_sd_sim import Ship
+
+        ship_type_map = {
+            'Terran_Interceptor': Ship_type.TERRAN_INTERCEPTOR,
+            'Terran_Cruiser': Ship_type.TERRAN_CRUISER,
+            'Terran_Dreadnought': Ship_type.TERRAN_DREADNOUGHT,
+            'Terran_Starbase': Ship_type.TERRAN_STARBASE,
+            'Eridani_Interceptor': Ship_type.ERIDANI_INTERCEPTOR,
+            'Eridani_Cruiser': Ship_type.ERIDANI_CRUISER,
+            'Eridani_Dreadnought': Ship_type.ERIDANI_DREADNOUGHT,
+            'Eridani_Starbase': Ship_type.ERIDANI_STARBASE,
+            'Orion_Interceptor': Ship_type.ORION_INTERCEPTOR,
+            'Orion_Cruiser': Ship_type.ORION_CRUISER,
+            'Orion_Dreadnought': Ship_type.ORION_DREADNOUGHT,
+            'Orion_Starbase': Ship_type.ORION_STARBASE,
+            'Planta_Interceptor': Ship_type.PLANTA_INTERCEPTOR,
+            'Planta_Cruiser': Ship_type.PLANTA_CRUISER,
+            'Planta_Dreadnought': Ship_type.PLANTA_DREADNOUGHT,
+            'Planta_Starbase': Ship_type.PLANTA_STARBASE,
+        }
+        ship_type_enum = ship_type_map.get(ship_type_name)
+        if not ship_type_enum:
+            return jsonify({'error': f'Unknown ship type: {ship_type_name}'}), 400
+
+        test_ship = Ship(ship_type_enum, player_num=1, is_attacker=True)
+
+        # Calculate total_energy as sum of positive energy values from default parts
+        # This represents the ship's total energy pool (sources only, not costs)
+        total_energy = 0
+        for part in test_ship.ship_parts:
+            if part is not None:
+                part_energy = ship_parts[part].get('energy', 0)
+                if part_energy > 0:
+                    total_energy += part_energy
+
+        return jsonify({
+            'stats': {
+                'shielding': test_ship.get_shielding(),
+                'energy': total_energy,
+                'available_energy': test_ship.get_avail_energy(),
+                'initiative': test_ship.get_initiative(),
+                'armor': 0,
+                'targeting': test_ship.get_targeting(),
+                'hp': test_ship.get_hp(),
+            },
+        })
+
     @app.route('/api/validate_part_placement', methods=['POST'])
     def validate_part_placement():
         """Validate where a part can be placed on a ship.

@@ -691,12 +691,27 @@ function loadShipTypeInfo(blueprintName, callback) {
         .then(function(response) { return response.json(); })
         .then(function(data) {
             currentSlotMapping = data.mapping || {};
+            return fetch('/api/initial_stats/' + blueprintName);
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                console.error('Failed to load initial stats for ' + blueprintName);
+                currentShipStats = null;
+                return;
+            }
+            return response.json();
+        })
+        .then(function(initialData) {
+            if (initialData && initialData.stats) {
+                currentShipStats = initialData.stats;
+            }
             if (callback) callback();
         })
         .catch(function(err) {
             console.error('Failed to load ship type info for ' + blueprintName + ':', err);
             currentShipTypeInfo = null;
             currentSlotMapping = {};
+            currentShipStats = null;
         });
 }
 
@@ -714,11 +729,26 @@ function calculateShipStats(blueprintName) {
         return null;
     }
 
+    // Check if any slots have user-placed parts
+    var hasUserParts = false;
+    for (var i = 0; i < slots.length; i++) {
+        if (slots[i].partName) {
+            hasUserParts = true;
+            break;
+        }
+    }
+
+    // If no parts placed, return initial stats from API
+    if (!hasUserParts && currentShipStats) {
+        return currentShipStats;
+    }
+
     var totalShielding = 0;
     var totalEnergy = shipType.bonus_energy;
     var initiative = shipType.base_initiative;
     var armor = 0;
     var targeting = shipType.bonus_targeting;
+    var energyPool = 0;
 
     for (var i = 0; i < slots.length; i++) {
         var partName = slots[i].partName;
@@ -732,6 +762,9 @@ function calculateShipStats(blueprintName) {
         }
         if ('energy' in partData) {
             totalEnergy += partData.energy;
+            if (partData.energy > 0) {
+                energyPool += partData.energy;
+            }
         }
         if ('initiative' in partData) {
             initiative += partData.initiative;
@@ -749,7 +782,7 @@ function calculateShipStats(blueprintName) {
 
     currentShipStats = {
         shielding: totalShielding,
-        energy: totalEnergy,
+        energy: energyPool,
         availableEnergy: availableEnergy,
         initiative: initiative,
         armor: armor,

@@ -160,8 +160,8 @@ class Ship:
         self._hp = new_hp
         
     def get_avail_energy(self) -> int:
-        """Calculate the total available energy from all installed parts."""
-        energy = 0
+        """Calculate the total available energy from ship bonus and all installed parts."""
+        energy = ship_types[self.ship_type]['bonus_energy']
         for part in self.ship_parts:
             if part is None:
                 continue
