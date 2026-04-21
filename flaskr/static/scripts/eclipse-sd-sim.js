@@ -302,6 +302,26 @@ function validatePartPlacement(partName) {
     }
 
     var typeName = currentBlueprintName;
+
+    // Apply slot mapping: convert frontend detected slot indices to backend static slot indices
+    var staticSlotIndices = [];
+    var detectedToStatic = {};
+    var staticToDetected = {};
+    var slots = blueprintSlotBoxes[currentBlueprintName];
+    if (slots && Object.keys(currentSlotMapping).length > 0) {
+        for (var i = 0; i < slots.length; i++) {
+            if (currentSlotMapping[i] !== undefined) {
+                staticSlotIndices.push(currentSlotMapping[i]);
+                detectedToStatic[i] = currentSlotMapping[i];
+                staticToDetected[currentSlotMapping[i]] = i;
+            } else {
+                staticSlotIndices.push(i);
+                detectedToStatic[i] = i;
+                staticToDetected[i] = i;
+            }
+        }
+    }
+
     var response = fetch('/api/validate_part_placement', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
@@ -309,16 +329,28 @@ function validatePartPlacement(partName) {
     })
     .then(function(response) { return response.json(); })
     .then(function(data) {
-        var slots = blueprintSlotBoxes[currentBlueprintName];
         if (!slots) return;
 
-        invalidSlotsForSelectedPart = new Set(data.invalid_slots || []);
+        invalidSlotsForSelectedPart = new Set();
 
-        // Update slot invalid states using generic messages from backend
+        // Convert backend static slot indices back to frontend detected slot indices
+        var invalidStaticSlots = data.invalid_slots || [];
+        for (var j = 0; j < invalidStaticSlots.length; j++) {
+            var staticIdx = invalidStaticSlots[j];
+            if (staticToDetected[staticIdx] !== undefined) {
+                invalidSlotsForSelectedPart.add(staticToDetected[staticIdx]);
+            }
+        }
+
+        // Build a map of static slot index -> reason for lookup
+        var staticReasons = data.invalid_reasons || {};
+
+        // Update slot invalid states using detected slot indices
         for (var i = 0; i < slots.length; i++) {
+            var staticIdx = detectedToStatic[i] !== undefined ? detectedToStatic[i] : i;
             if (invalidSlotsForSelectedPart.has(i)) {
                 slots[i].invalid = true;
-                slots[i].invalidReason = data.invalid_reasons[i] || null;
+                slots[i].invalidReason = staticReasons[staticIdx] || null;
             } else {
                 slots[i].invalid = false;
                 slots[i].invalidReason = null;
@@ -744,11 +776,11 @@ function calculateShipStats(blueprintName) {
     }
 
     var totalShielding = 0;
-    var totalEnergy = shipType.bonus_energy;
+    var energyPool = shipType.bonus_energy;
+    var totalEnergyCost = 0;
     var initiative = shipType.base_initiative;
     var armor = 0;
     var targeting = shipType.bonus_targeting;
-    var energyPool = 0;
 
     for (var i = 0; i < slots.length; i++) {
         var partName = slots[i].partName;
@@ -761,9 +793,10 @@ function calculateShipStats(blueprintName) {
             totalShielding += partData.shielding;
         }
         if ('energy' in partData) {
-            totalEnergy += partData.energy;
             if (partData.energy > 0) {
                 energyPool += partData.energy;
+            } else if (partData.energy < 0) {
+                totalEnergyCost += Math.abs(partData.energy);
             }
         }
         if ('initiative' in partData) {
@@ -778,7 +811,7 @@ function calculateShipStats(blueprintName) {
     }
 
     var hitPoints = 1 + armor;
-    var availableEnergy = totalEnergy;
+    var availableEnergy = energyPool - totalEnergyCost;
 
     currentShipStats = {
         shielding: totalShielding,

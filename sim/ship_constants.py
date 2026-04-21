@@ -44,8 +44,8 @@ ship_types = {
         "bonus_energy": 0,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE,
-            Ship_Part.NUCLEAR_SOURCE, None
+            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_SOURCE,
+            Ship_Part.NUCLEAR_DRIVE, None
         ],
     },
     Ship_type.TERRAN_CRUISER: {
@@ -54,9 +54,9 @@ ship_types = {
         "bonus_energy": 0,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE,
-            Ship_Part.NUCLEAR_SOURCE, Ship_Part.ELECTRON_COMPUTER,
-            Ship_Part.HULL, None
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
+            None, Ship_Part.NUCLEAR_SOURCE, Ship_Part.HULL,
+            Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.TERRAN_DREADNOUGHT: {
@@ -65,10 +65,9 @@ ship_types = {
         "bonus_energy": 0,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.ION_CANNON,
-            Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-            Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL,
-            Ship_Part.HULL, None
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
+            Ship_Part.ION_CANNON, None, Ship_Part.NUCLEAR_SOURCE,
+            Ship_Part.HULL, Ship_Part.HULL, Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.TERRAN_STARBASE: {
@@ -77,8 +76,8 @@ ship_types = {
         "bonus_energy": 3,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER,
-            Ship_Part.HULL, Ship_Part.HULL, None
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
+            None, Ship_Part.HULL, Ship_Part.HULL
         ],
     },
     Ship_type.ERIDANI_INTERCEPTOR: {
@@ -87,8 +86,8 @@ ship_types = {
         "bonus_energy": 1,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE,
-            Ship_Part.NUCLEAR_SOURCE, None
+            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_SOURCE,
+            Ship_Part.NUCLEAR_DRIVE, None
         ],
     },
     Ship_type.ERIDANI_CRUISER: {
@@ -97,9 +96,9 @@ ship_types = {
         "bonus_energy": 1,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE,
-            Ship_Part.NUCLEAR_SOURCE, Ship_Part.ELECTRON_COMPUTER,
-            Ship_Part.HULL, None
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
+            None, Ship_Part.NUCLEAR_SOURCE, Ship_Part.HULL,
+            Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.ERIDANI_DREADNOUGHT: {
@@ -108,10 +107,9 @@ ship_types = {
         "bonus_energy": 1,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.ION_CANNON,
-            Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-            Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL,
-            Ship_Part.HULL, None
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
+            Ship_Part.ION_CANNON, None, Ship_Part.NUCLEAR_SOURCE,
+            Ship_Part.HULL, Ship_Part.HULL, Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.ERIDANI_STARBASE: {
@@ -120,8 +118,8 @@ ship_types = {
         "bonus_energy": 3,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER,
-            Ship_Part.HULL, Ship_Part.HULL, None
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
+            None, Ship_Part.HULL, Ship_Part.HULL
         ],
     },
     Ship_type.ORION_INTERCEPTOR: {
@@ -130,8 +128,8 @@ ship_types = {
         "bonus_energy": 1,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE,
-            Ship_Part.NUCLEAR_SOURCE, Ship_Part.GAUSS_SHIELD
+            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_SOURCE,
+            Ship_Part.NUCLEAR_DRIVE, Ship_Part.GAUSS_SHIELD
         ],
     },
     Ship_type.ORION_CRUISER: {
@@ -140,9 +138,9 @@ ship_types = {
         "bonus_energy": 2,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE,
-            Ship_Part.NUCLEAR_SOURCE, Ship_Part.ELECTRON_COMPUTER,
-            Ship_Part.HULL, Ship_Part.GAUSS_SHIELD
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
+            Ship_Part.GAUSS_SHIELD, Ship_Part.NUCLEAR_SOURCE,
+            Ship_Part.HULL, Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.ORION_DREADNOUGHT: {
@@ -151,10 +149,10 @@ ship_types = {
         "bonus_energy": 3,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.ION_CANNON,
-            Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-            Ship_Part.ELECTRON_COMPUTER, Ship_Part.HULL,
-            Ship_Part.HULL, Ship_Part.GAUSS_SHIELD
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
+            Ship_Part.ION_CANNON, Ship_Part.GAUSS_SHIELD,
+            Ship_Part.NUCLEAR_SOURCE, Ship_Part.HULL,
+            Ship_Part.HULL, Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.ORION_STARBASE: {
@@ -163,7 +161,7 @@ ship_types = {
         "bonus_energy": 3,
         "bonus_targeting": 0,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER,
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
             Ship_Part.HULL, Ship_Part.HULL, Ship_Part.GAUSS_SHIELD
         ],
     },
@@ -173,8 +171,8 @@ ship_types = {
         "bonus_energy": 2,
         "bonus_targeting": 1,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE,
-            Ship_Part.NUCLEAR_SOURCE
+            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_SOURCE,
+            Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.PLANTA_CRUISER: {
@@ -183,8 +181,8 @@ ship_types = {
         "bonus_energy": 2,
         "bonus_targeting": 1,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.NUCLEAR_DRIVE,
-            Ship_Part.NUCLEAR_SOURCE, Ship_Part.HULL, None
+            Ship_Part.ION_CANNON, None, Ship_Part.NUCLEAR_SOURCE,
+            Ship_Part.HULL, Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.PLANTA_DREADNOUGHT: {
@@ -194,8 +192,8 @@ ship_types = {
         "bonus_targeting": 1,
         "installed_parts": [
             Ship_Part.ION_CANNON, Ship_Part.ION_CANNON,
-            Ship_Part.NUCLEAR_DRIVE, Ship_Part.NUCLEAR_SOURCE,
-            Ship_Part.HULL, Ship_Part.HULL, None
+            None, Ship_Part.NUCLEAR_SOURCE, Ship_Part.HULL,
+            Ship_Part.HULL, Ship_Part.NUCLEAR_DRIVE
         ],
     },
     Ship_type.PLANTA_STARBASE: {
@@ -204,7 +202,7 @@ ship_types = {
         "bonus_energy": 5,
         "bonus_targeting": 1,
         "installed_parts": [
-            Ship_Part.ION_CANNON, Ship_Part.ELECTRON_COMPUTER,
+            Ship_Part.ELECTRON_COMPUTER, Ship_Part.ION_CANNON,
             Ship_Part.HULL, Ship_Part.HULL
         ],
     },
