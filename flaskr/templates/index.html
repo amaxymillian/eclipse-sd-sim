@@ -44,6 +44,40 @@
     box-shadow: 0px -8px 16px 0px rgba(0,0,0,0.2);
   }
 
+  /* Blueprint dropdown styling */
+  .dropdown-content.blueprint-dropdown {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px;
+    min-width: 200px;
+  }
+
+  .dropdown-content.blueprint-dropdown table {
+    border-collapse: collapse;
+  }
+
+  .dropdown-content.blueprint-dropdown td {
+    padding: 4px;
+    vertical-align: top;
+  }
+
+  .dropdown-content.blueprint-dropdown td img {
+    display: block;
+    max-width: 120px;
+    max-height: 90px;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .dropdown-content.blueprint-dropdown td img:hover {
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
   /* Links inside the dropdown */
   .dropdown-content a {
     color: black;
@@ -102,31 +136,31 @@
   <div id="shipDesigner" style="display:none;">
     <div class="dropdown">
       <button class="dropbtn">Select Blueprint</button>
-      <div class="dropdown-content" style="padding: 0px 0px;">
+      <div class="dropdown-content blueprint-dropdown" style="padding: 0px 0px;">
         <table>
           <tr>
-            <td><img src="/static/images/blueprints/Terran_Interceptor.png" height="100%" width = "100%" onclick="selectBlueprint('Terran_Interceptor')" title="Terran Interceptor" /></td>
-            <td><img src="/static/images/blueprints/Terran_Cruiser.png" height="100%" width = "100%" onclick="selectBlueprint('Terran_Cruiser')" title="Terran Cruiser" /></td>
-            <td><img src="/static/images/blueprints/Terran_Dreadnought.png" height="100%" width = "100%" onclick="selectBlueprint('Terran_Dreadnought')" title="Terran Dreadnought" /></td>
-            <td><img src="/static/images/blueprints/Terran_Starbase.png" height="100%" width = "100%" onclick="selectBlueprint('Terran_Starbase')" title="Terran Starbase" /></td>
+            <td><img src="/static/images/blueprints/Terran_Interceptor.png" onclick="selectBlueprint('Terran_Interceptor')" title="Terran Interceptor" /></td>
+            <td><img src="/static/images/blueprints/Terran_Cruiser.png" onclick="selectBlueprint('Terran_Cruiser')" title="Terran Cruiser" /></td>
+            <td><img src="/static/images/blueprints/Terran_Dreadnought.png" onclick="selectBlueprint('Terran_Dreadnought')" title="Terran Dreadnought" /></td>
+            <td><img src="/static/images/blueprints/Terran_Starbase.png" onclick="selectBlueprint('Terran_Starbase')" title="Terran Starbase" /></td>
           </tr>
           <tr>
-            <td><img src="/static/images/blueprints/Eridani_Interceptor.png" height="100%" width = "100%" onclick="selectBlueprint('Eridani_Interceptor')" title="Eridani Interceptor" /></td>
-            <td><img src="/static/images/blueprints/Eridani_Cruiser.png" height="100%" width = "100%" onclick="selectBlueprint('Eridani_Cruiser')" title="Eridani Cruiser" /></td>
-            <td><img src="/static/images/blueprints/Eridani_Dreadnought.png" height="100%" width = "100%" onclick="selectBlueprint('Eridani_Dreadnought')" title="Eridani Dreadnought" /></td>
-            <td><img src="/static/images/blueprints/Eridani_Starbase.png" height="100%" width = "100%" onclick="selectBlueprint('Eridani_Starbase')" title="Eridani Starbase" /></td>
+            <td><img src="/static/images/blueprints/Eridani_Interceptor.png" onclick="selectBlueprint('Eridani_Interceptor')" title="Eridani Interceptor" /></td>
+            <td><img src="/static/images/blueprints/Eridani_Cruiser.png" onclick="selectBlueprint('Eridani_Cruiser')" title="Eridani Cruiser" /></td>
+            <td><img src="/static/images/blueprints/Eridani_Dreadnought.png" onclick="selectBlueprint('Eridani_Dreadnought')" title="Eridani Dreadnought" /></td>
+            <td><img src="/static/images/blueprints/Eridani_Starbase.png" onclick="selectBlueprint('Eridani_Starbase')" title="Eridani Starbase" /></td>
           </tr>
           <tr>
-            <td><img src="/static/images/blueprints/Orion_Interceptor.png" height="100%" width = "100%" onclick="selectBlueprint('Orion_Interceptor')" title="Orion Interceptor" /></td>
-            <td><img src="/static/images/blueprints/Orion_Cruiser.png" height="100%" width = "100%" onclick="selectBlueprint('Orion_Cruiser')" title="Orion Cruiser" /></td>
-            <td><img src="/static/images/blueprints/Orion_Dreadnought.png" height="100%" width = "100%" onclick="selectBlueprint('Orion_Dreadnought')" title="Orion Dreadnought" /></td>
-            <td><img src="/static/images/blueprints/Orion_Starbase.png" height="100%" width = "100%" onclick="selectBlueprint('Orion_Starbase')" title="Orion Starbase" /></td>
+            <td><img src="/static/images/blueprints/Orion_Interceptor.png" onclick="selectBlueprint('Orion_Interceptor')" title="Orion Interceptor" /></td>
+            <td><img src="/static/images/blueprints/Orion_Cruiser.png" onclick="selectBlueprint('Orion_Cruiser')" title="Orion Cruiser" /></td>
+            <td><img src="/static/images/blueprints/Orion_Dreadnought.png" onclick="selectBlueprint('Orion_Dreadnought')" title="Orion Dreadnought" /></td>
+            <td><img src="/static/images/blueprints/Orion_Starbase.png" onclick="selectBlueprint('Orion_Starbase')" title="Orion Starbase" /></td>
           </tr>
           <tr>
-            <td><img src="/static/images/blueprints/Planta_Interceptor.png" height="100%" width = "100%" onclick="selectBlueprint('Planta_Interceptor')" title="Planta Interceptor" /></td>
-            <td><img src="/static/images/blueprints/Planta_Cruiser.png" height="100%" width = "100%" onclick="selectBlueprint('Planta_Cruiser')" title="Planta Cruiser" /></td>
-            <td><img src="/static/images/blueprints/Planta_Dreadnought.png" height="100%" width = "100%" onclick="selectBlueprint('Planta_Dreadnought')" title="Planta Dreadnought" /></td>
-            <td><img src="/static/images/blueprints/Planta_Starbase.png" height="100%" width = "100%" onclick="selectBlueprint('Planta_Starbase')" title="Planta Starbase" /></td>
+            <td><img src="/static/images/blueprints/Planta_Interceptor.png" onclick="selectBlueprint('Planta_Interceptor')" title="Planta Interceptor" /></td>
+            <td><img src="/static/images/blueprints/Planta_Cruiser.png" onclick="selectBlueprint('Planta_Cruiser')" title="Planta Cruiser" /></td>
+            <td><img src="/static/images/blueprints/Planta_Dreadnought.png" onclick="selectBlueprint('Planta_Dreadnought')" title="Planta Dreadnought" /></td>
+            <td><img src="/static/images/blueprints/Planta_Starbase.png" onclick="selectBlueprint('Planta_Starbase')" title="Planta Starbase" /></td>
           </tr>
 
       </table>

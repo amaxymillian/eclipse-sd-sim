@@ -896,14 +896,16 @@ function openDropdown(dropdown) {
 
     portal.appendChild(content);
 
-    requestAnimationFrame(function() {
-        var contentRect = content.getBoundingClientRect();
-        var viewportHeight = window.innerHeight;
+    if (!content.classList.contains('blueprint-dropdown')) {
+        requestAnimationFrame(function() {
+            var contentRect = content.getBoundingClientRect();
+            var viewportHeight = window.innerHeight;
 
-        if (contentRect.bottom > viewportHeight) {
-            content.style.top = (btnRect.top - contentRect.height) + 'px';
-        }
-    });
+            if (contentRect.bottom > viewportHeight) {
+                content.style.top = (btnRect.top - contentRect.height) + 'px';
+            }
+        });
+    }
 
     content._originalParent = btn.parentElement;
     content._parentDropdown = dropdown;
@@ -1015,14 +1017,16 @@ function repositionDropdownContent(dropdown) {
     content.style.left = btnRect.left + 'px';
     content.style.top = (btnRect.top + btnRect.height) + 'px';
 
-    requestAnimationFrame(function() {
-        var contentRect = content.getBoundingClientRect();
-        var viewportHeight = window.innerHeight;
+    if (!content.classList.contains('blueprint-dropdown')) {
+        requestAnimationFrame(function() {
+            var contentRect = content.getBoundingClientRect();
+            var viewportHeight = window.innerHeight;
 
-        if (contentRect.bottom > viewportHeight) {
-            content.style.top = (btnRect.top - contentRect.height) + 'px';
-        }
-    });
+            if (contentRect.bottom > viewportHeight) {
+                content.style.top = (btnRect.top - contentRect.height) + 'px';
+            }
+        });
+    }
 }
 
 function closeAllDropdowns() {
