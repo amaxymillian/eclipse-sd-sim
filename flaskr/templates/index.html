@@ -119,8 +119,14 @@
       <button class="dropbtn">Ship Designer</button>
       <div class="dropdown-content">
         <a href="#" onclick="showPrimaryDiv('shipDesigner')">New...</a>
-        <a href="#">Open Saved Ship</a>
-        <a href="#">Save Current Ship </a>
+        <a href="#" onclick="saveCurrentShip()">Save Current Ship</a>
+        <a href="#" onclick="exportCurrentShip()">Export Ship...</a>
+        <a href="#" onclick="document.getElementById('importShipFile').click()">Import Ship...</a>
+        <input type="file" id="importShipFile" accept=".json" style="display:none;" onchange="importShipFromEvent(event)" />
+        <div style="border-top: 1px solid #ddd; margin: 4px 0;"></div>
+        <div id="savedShipsList">
+          <a href="#" style="color: #999; pointer-events: none;">No saved ships</a>
+        </div>
       </div>
     </div>
     <div class="dropdown">
