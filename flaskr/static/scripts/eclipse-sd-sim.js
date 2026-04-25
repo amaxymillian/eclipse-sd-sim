@@ -218,6 +218,77 @@ function getSlotAtPosition(x, y) {
     return -1;
 }
 
+function validatePartPlacementSync(slotIndex, partName) {
+    var slots = blueprintSlotBoxes[currentBlueprintName];
+    if (!slots || !currentBlueprintName) return null;
+
+    var shipType = shipTypesData[currentBlueprintName];
+    if (!shipType) return null;
+
+    var partData = shipPartsData[partName];
+    if (!partData) return null;
+
+    var partEnergy = partData.energy || 0;
+    var oldPartName = slots[slotIndex].partName;
+    var oldEnergy = 0;
+    if (oldPartName) {
+        var oldPartData = shipPartsData[oldPartName];
+        if (oldPartData) {
+            oldEnergy = oldPartData.energy || 0;
+        }
+    }
+
+    var energyPool = shipType.bonus_energy || 0;
+    var totalEnergyCost = 0;
+    var driveCount = 0;
+    var oldIsDrive = false;
+
+    for (var i = 0; i < slots.length; i++) {
+        var currentPartName = slots[i].partName;
+        if (!currentPartName) continue;
+
+        var currentPartData = shipPartsData[currentPartName];
+        if (!currentPartData) continue;
+
+        var energy = currentPartData.energy || 0;
+        if (energy > 0) {
+            energyPool += energy;
+        } else if (energy < 0) {
+            totalEnergyCost += Math.abs(energy);
+        }
+
+        if (currentPartData.type === 'drive') {
+            driveCount++;
+            if (i === slotIndex) {
+                oldIsDrive = true;
+            }
+        }
+    }
+
+    var currentAvailableEnergy = energyPool - totalEnergyCost;
+
+    var newAvailableEnergy = currentAvailableEnergy - oldEnergy + partEnergy;
+    if (newAvailableEnergy < 0) {
+        return 'Insufficient energy. Placing ' + partName + ' would require ' + Math.abs(newAvailableEnergy) + ' more energy available.';
+    }
+
+    var newIsDrive = partData.type === 'drive';
+    var effectiveDriveCount = driveCount;
+    if (oldIsDrive) {
+        effectiveDriveCount -= 1;
+    }
+
+    if (!newIsDrive && effectiveDriveCount < 1) {
+        if (oldIsDrive) {
+            return 'Cannot remove the last drive. Replacing ' + oldPartName + ' with ' + partName + ' would leave the ship with no drive.';
+        } else {
+            return 'Cannot place ' + partName + '. The ship would have no drive installed.';
+        }
+    }
+
+    return null;
+}
+
 function placePart(slotIndex, partName) {
     console.log('[DIAG] placePart called: slotIndex=', slotIndex, 'partName=', partName);
     var slots = blueprintSlotBoxes[currentBlueprintName];
@@ -230,10 +301,21 @@ function placePart(slotIndex, partName) {
         return;
     }
 
-    // Check if slot is invalid for the selected part
+    // Check if slot is marked invalid by async validation
     if (slots[slotIndex].invalid) {
         console.log('[DIAG] placePart: slot', slotIndex, 'is invalid - reason:', slots[slotIndex].invalidReason);
         showPlacementFeedback(slots[slotIndex].invalidReason);
+        return;
+    }
+
+    // Synchronous validation: check energy and drive constraints
+    var syncError = validatePartPlacementSync(slotIndex, partName);
+    if (syncError) {
+        console.log('[DIAG] placePart: synchronous validation failed -', syncError);
+        slots[slotIndex].invalid = true;
+        slots[slotIndex].invalidReason = syncError;
+        showPlacementFeedback(syncError);
+        drawOverlay();
         return;
     }
 
@@ -379,6 +461,7 @@ function validatePartPlacement(partName) {
         }
 
         // Build a map of static slot index -> reason for lookup
+        // JSON converts integer keys to strings, so we need to stringify the key
         var staticReasons = data.invalid_reasons || {};
 
         // Update slot invalid states using detected slot indices
@@ -386,7 +469,7 @@ function validatePartPlacement(partName) {
             var staticIdx = detectedToStatic[i] !== undefined ? detectedToStatic[i] : i;
             if (invalidSlotsForSelectedPart.has(i)) {
                 slots[i].invalid = true;
-                slots[i].invalidReason = staticReasons[staticIdx] || null;
+                slots[i].invalidReason = staticReasons[String(staticIdx)] || null;
             } else {
                 slots[i].invalid = false;
                 slots[i].invalidReason = null;
