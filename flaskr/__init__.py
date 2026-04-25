@@ -344,6 +344,7 @@ def create_app(test_config=None):
         data = request.get_json()
         ship_type_name = data.get('ship_type')
         part_name = data.get('part_name')
+        current_parts_names = data.get('current_parts')
 
         if not ship_type_name or not part_name:
             return jsonify({'error': 'ship_type and part_name are required'}), 400
@@ -381,13 +382,28 @@ def create_app(test_config=None):
         if not part_enum:
             return jsonify({'error': f'Unknown part: {part_name}'}), 400
 
+        # Convert current parts names to enums
+        current_parts = None
+        if current_parts_names:
+            current_parts = []
+            for pname in current_parts_names:
+                if pname is None:
+                    current_parts.append(None)
+                else:
+                    found = None
+                    for sp in Ship_Part:
+                        if sp.name == pname:
+                            found = sp
+                            break
+                    current_parts.append(found)
+
         invalid_slots = []
         invalid_reasons = {}
         num_slots = ship_types[ship_type_enum]['slots']
 
         # Test placing the part in each slot (fresh ship for each to avoid state pollution)
         for slot_idx in range(num_slots):
-            test_ship = Ship(ship_type_enum, player_num=1, is_attacker=True, ship_parts=None)
+            test_ship = Ship(ship_type_enum, player_num=1, is_attacker=True, ship_parts=current_parts)
             success, message = test_ship.add_part(part_name, slot_idx)
             if not success:
                 invalid_slots.append(slot_idx)

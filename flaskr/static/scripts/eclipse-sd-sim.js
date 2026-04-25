@@ -78,13 +78,14 @@ function loadGridSlots(canvas, ctx, blueprintName, callback) {
             if (data.slots) {
                 for (var i = 0; i < data.slots.length; i++) {
                     var s = data.slots[i];
+                    var hasDefault = s.default_part !== null && s.default_part !== undefined;
                     slots.push({
                         x: s.x,
                         y: s.y,
                         w: s.width,
                         h: s.height,
-                        occupied: false,
-                        partName: null,
+                        occupied: hasDefault,
+                        partName: hasDefault ? s.default_part : null,
                         invalid: false,
                         invalidReason: null,
                         slotType: s.slot_type,
@@ -296,36 +297,71 @@ function showPlacementFeedback(message) {
 
 // ===== Validation =====
 
+function buildSlotMapping(slots, typeName) {
+    var detectedToStatic = {};
+    var staticToDetected = {};
+    var installedParts = shipTypesData[typeName] ? shipTypesData[typeName].installed_parts : [];
+
+    for (var i = 0; i < slots.length; i++) {
+        var defaultPart = slots[i].defaultPart;
+        if (defaultPart) {
+            var staticIdx = -1;
+            for (var j = 0; j < installedParts.length; j++) {
+                if (installedParts[j] === defaultPart && !staticToDetected[j]) {
+                    staticIdx = j;
+                    break;
+                }
+            }
+            if (staticIdx >= 0) {
+                detectedToStatic[i] = staticIdx;
+                staticToDetected[staticIdx] = i;
+            }
+        }
+    }
+
+    for (var i = 0; i < slots.length; i++) {
+        if (detectedToStatic[i] === undefined) {
+            for (var j = 0; j < installedParts.length; j++) {
+                if (!staticToDetected[j]) {
+                    detectedToStatic[i] = j;
+                    staticToDetected[j] = i;
+                    break;
+                }
+            }
+        }
+    }
+
+    return { detectedToStatic: detectedToStatic, staticToDetected: staticToDetected };
+}
+
 function validatePartPlacement(partName) {
     if (!currentBlueprintName) {
         return;
     }
 
     var typeName = currentBlueprintName;
-
-    // Apply slot mapping: convert frontend detected slot indices to backend static slot indices
-    var staticSlotIndices = [];
-    var detectedToStatic = {};
-    var staticToDetected = {};
     var slots = blueprintSlotBoxes[currentBlueprintName];
-    if (slots && Object.keys(currentSlotMapping).length > 0) {
-        for (var i = 0; i < slots.length; i++) {
-            if (currentSlotMapping[i] !== undefined) {
-                staticSlotIndices.push(currentSlotMapping[i]);
-                detectedToStatic[i] = currentSlotMapping[i];
-                staticToDetected[currentSlotMapping[i]] = i;
-            } else {
-                staticSlotIndices.push(i);
-                detectedToStatic[i] = i;
-                staticToDetected[i] = i;
-            }
+    if (!slots) return;
+
+    var mapping = buildSlotMapping(slots, typeName);
+    var detectedToStatic = mapping.detectedToStatic;
+    var staticToDetected = mapping.staticToDetected;
+
+    // Build current parts array in backend static slot order
+    var shipType = shipTypesData[typeName];
+    var numSlots = shipType ? shipType.slots : slots.length;
+    var currentParts = new Array(numSlots).fill(null);
+    for (var i = 0; i < slots.length; i++) {
+        var staticIdx = detectedToStatic[i];
+        if (staticIdx !== undefined && slots[i].partName) {
+            currentParts[staticIdx] = slots[i].partName;
         }
     }
 
     var response = fetch('/api/validate_part_placement', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ship_type: typeName, part_name: partName})
+        body: JSON.stringify({ship_type: typeName, part_name: partName, current_parts: currentParts})
     })
     .then(function(response) { return response.json(); })
     .then(function(data) {
@@ -593,10 +629,10 @@ function selectBlueprint(blueprintName) {
                     loadShipData(function() {
                         console.log('[DIAG] Ship data loaded successfully');
                         updateShipStats();
+                        loadingDiv.style.display = "none";
+                        console.log('Blueprint displayed successfully');
                     });
                 });
-                loadingDiv.style.display = "none";
-                console.log('Blueprint displayed successfully');
             });
         } catch(e) {
             console.error('Error drawing blueprint:', e);
@@ -735,7 +771,17 @@ function loadShipTypeInfo(blueprintName, callback) {
         })
         .then(function(initialData) {
             if (initialData && initialData.stats) {
-                currentShipStats = initialData.stats;
+                var raw = initialData.stats;
+                currentShipStats = {
+                    shielding: raw.shielding,
+                    energy: raw.energy,
+                    availableEnergy: raw.available_energy,
+                    initiative: raw.initiative,
+                    armor: raw.armor,
+                    targeting: raw.targeting,
+                    hp: raw.hp,
+                    maxHp: raw.hp
+                };
             }
             if (callback) callback();
         })
