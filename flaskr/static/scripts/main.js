@@ -7,6 +7,7 @@ import { setupDropdownHandlers } from './dropdowns.js';
 import { updateSavedShipsMenu } from './saved-ships.js';
 import { selectBlueprint, onDragStart, addPartToShip, showPrimaryDiv } from './interaction.js';
 import { saveCurrentShip, exportCurrentShip, importShipFromEvent } from './saved-ships.js';
+import { setupBattleSimulator } from './battle-simulator.js';
 
 function setupDataAttributeHandlers() {
     // Blueprint thumbnail clicks
@@ -76,4 +77,5 @@ document.addEventListener('DOMContentLoaded', function () {
     setupDropdownHandlers();
     setupDataAttributeHandlers();
     updateSavedShipsMenu();
+    setupBattleSimulator();
 });

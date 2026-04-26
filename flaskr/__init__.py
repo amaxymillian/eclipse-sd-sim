@@ -322,6 +322,131 @@ def create_app(test_config=None):
             },
         })
 
+    @app.route('/api/run_battle', methods=['POST'])
+    def run_battle():
+        """Run a Monte Carlo battle simulation between two fleets.
+
+        Request JSON:
+            fleet_a (list[dict]): Fleet A ships, each {name, blueprint, slots}
+            fleet_b (list[dict]): Fleet B ships, each {name, blueprint, slots}
+            simulations (int): Number of Monte Carlo iterations
+
+        Response JSON:
+            a_win_pct (float): Percentage of simulations fleet A won
+            b_win_pct (float): Percentage of simulations fleet B won
+            draw_pct (float): Percentage of draws
+            avg_surviving_a (float): Average surviving ships for fleet A
+            avg_surviving_b (float): Average surviving ships for fleet B
+        """
+        from sim.eclipse_sd_sim import Ship, Battle_sim
+        from sim.ship_parts_constants import Ship_Part
+        from sim.ship_constants import Ship_type
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'JSON body required'}), 400
+
+        fleet_a_data = data.get('fleet_a')
+        fleet_b_data = data.get('fleet_b')
+        sim_count = data.get('simulations', 1000)
+
+        if not fleet_a_data or not fleet_b_data:
+            return jsonify({'error': 'fleet_a and fleet_b are required'}), 400
+
+        if not isinstance(sim_count, int) or sim_count < 1:
+            return jsonify({'error': 'simulations must be a positive integer'}), 400
+
+        ship_type_map = {
+            'Terran_Interceptor': Ship_type.TERRAN_INTERCEPTOR,
+            'Terran_Cruiser': Ship_type.TERRAN_CRUISER,
+            'Terran_Dreadnought': Ship_type.TERRAN_DREADNOUGHT,
+            'Terran_Starbase': Ship_type.TERRAN_STARBASE,
+            'Eridani_Interceptor': Ship_type.ERIDANI_INTERCEPTOR,
+            'Eridani_Cruiser': Ship_type.ERIDANI_CRUISER,
+            'Eridani_Dreadnought': Ship_type.ERIDANI_DREADNOUGHT,
+            'Eridani_Starbase': Ship_type.ERIDANI_STARBASE,
+            'Orion_Interceptor': Ship_type.ORION_INTERCEPTOR,
+            'Orion_Cruiser': Ship_type.ORION_CRUISER,
+            'Orion_Dreadnought': Ship_type.ORION_DREADNOUGHT,
+            'Orion_Starbase': Ship_type.ORION_STARBASE,
+            'Planta_Interceptor': Ship_type.PLANTA_INTERCEPTOR,
+            'Planta_Cruiser': Ship_type.PLANTA_CRUISER,
+            'Planta_Dreadnought': Ship_type.PLANTA_DREADNOUGHT,
+            'Planta_Starbase': Ship_type.PLANTA_STARBASE,
+        }
+
+        def build_ships(fleet_data, player_num, is_attacker):
+            ships = []
+            for ship_info in fleet_data:
+                blueprint = ship_info.get('blueprint')
+                slots = ship_info.get('slots', [])
+
+                ship_type_enum = ship_type_map.get(blueprint)
+                if not ship_type_enum:
+                    return None, f'Unknown ship type: {blueprint}'
+
+                parts_list = []
+                for slot in slots:
+                    part_name = slot.get('partName')
+                    occupied = slot.get('occupied', False)
+                    if occupied and part_name:
+                        for sp in Ship_Part:
+                            if sp.name == part_name:
+                                parts_list.append(sp)
+                                break
+                        else:
+                            parts_list.append(None)
+                    else:
+                        parts_list.append(None)
+
+                ships.append(Ship(ship_type_enum, player_num, is_attacker, parts_list))
+            return ships, None
+
+        fleet_a, err = build_ships(fleet_a_data, 1, True)
+        if err:
+            return jsonify({'error': err}), 400
+
+        fleet_b, err = build_ships(fleet_b_data, 2, False)
+        if err:
+            return jsonify({'error': err}), 400
+
+        if not fleet_a or not fleet_b:
+            return jsonify({'error': 'Both fleets must have at least one ship'}), 400
+
+        battle = Battle_sim(fleet_a, fleet_b)
+        battle.do_battle(sim_count)
+
+        a_wins = 0
+        b_wins = 0
+        draws = 0
+        total_surviving_a = 0
+        total_surviving_b = 0
+
+        for _idx, row in battle._df.iterrows():
+            winner = row['Winning Player']
+            count = row['Raw Count']
+            if winner == 1:
+                a_wins += count
+            elif winner == 2:
+                b_wins += count
+            else:
+                draws += count
+
+            surviving_a = len([s for s in row['Surviving Intr'] + row['Surviving Crus'] + row['Surviving Dred'] + row['Surviving Strb'] if s.player_num == 1])
+            surviving_b = len([s for s in row['Surviving Intr'] + row['Surviving Crus'] + row['Surviving Dred'] + row['Surviving Strb'] if s.player_num == 2])
+            total_surviving_a += surviving_a * count
+            total_surviving_b += surviving_b * count
+
+        total = a_wins + b_wins + draws
+        return jsonify({
+            'a_win_pct': round(a_wins / total * 100, 2) if total > 0 else 0,
+            'b_win_pct': round(b_wins / total * 100, 2) if total > 0 else 0,
+            'draw_pct': round(draws / total * 100, 2) if total > 0 else 0,
+            'avg_surviving_a': round(total_surviving_a / total, 2) if total > 0 else 0,
+            'avg_surviving_b': round(total_surviving_b / total, 2) if total > 0 else 0,
+            'simulations': sim_count,
+        })
+
     @app.route('/api/validate_part_placement', methods=['POST'])
     def validate_part_placement():
         """Validate where a part can be placed on a ship.

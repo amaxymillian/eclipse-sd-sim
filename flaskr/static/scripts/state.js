@@ -18,3 +18,10 @@ export const AppState = {
 
 export const WHITE_THRESHOLD = 150;
 export const SAVED_SHIPS_KEY = 'eclipse-sd-sim-ships';
+
+AppState.battle = {
+    fleetA: {},
+    fleetB: {},
+    simCount: 5000,
+    results: null,
+};

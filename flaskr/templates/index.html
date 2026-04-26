@@ -4,6 +4,7 @@
 
 <head>
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style-battle.css') }}">
   <script src="../static/scripts/tracking-min.js"></script>
   <script type="module" src="{{ url_for('static', filename='scripts/main.js') }}"></script>
   <style>
@@ -323,7 +324,27 @@
   </div>
 
   <div id="battleSimulator" style="display:none;">
-
+    <div class="battle-layout">
+      <div class="fleet-panel">
+        <h2>Fleet A</h2>
+        <div id="fleetAList"></div>
+      </div>
+      <div class="controls-panel">
+        <h2>Controls</h2>
+        <div class="control-group">
+          <label for="simCountInput">Simulations</label>
+          <input type="number" id="simCountInput" value="5000" min="1" />
+        </div>
+        <button class="battle-btn" id="runBattleBtn" disabled>Run Battle</button>
+        <button class="battle-btn reset" id="resetBattleBtn">Reset</button>
+        <div class="battle-spinner" id="battleSpinner">Running simulation...</div>
+        <div class="results-panel" id="battleResults"></div>
+      </div>
+      <div class="fleet-panel">
+        <h2>Fleet B</h2>
+        <div id="fleetBList"></div>
+      </div>
+    </div>
   </div>
 
   <!--
