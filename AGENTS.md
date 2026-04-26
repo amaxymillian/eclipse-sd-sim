@@ -18,12 +18,21 @@ eclipse-sd-sim/
 │   ├── __init__.py      # App factory, routes, API endpoints
 │   ├── frontend.py      # (empty placeholder)
 │   ├── templates/
-│   │   └── index.html   # Single-page app with embedded CSS/JS
+│   │   └── index.html   # SPA template; data-* attributes drive JS behavior
 │   └── static/
 │       ├── style.css    # Global styles
-│       ├── scripts/
-│       │   ├── eclipse-sd-sim.js   # Frontend logic (drag-drop, canvas, stats)
-│       │   └── tracking-min.js     # Analytics
+│       ├── scripts/     # ES modules (no build step)
+│       │   ├── main.js              # Entry point; DOMContentLoaded bootstrap
+│       │   ├── state.js             # Central AppState object (single source of truth)
+│       │   ├── feedback.js          # Toast notification helper
+│       │   ├── canvas-overlay.js    # Canvas drawing: slots, parts, labels
+│       │   ├── stats.js             # Ship stat calculation and display
+│       │   ├── validation.js        # Async backend part placement validation
+│       │   ├── interaction.js       # Slot interaction, drag-drop, blueprint selection
+│       │   ├── handlers.js          # Overlay canvas event listeners
+│       │   ├── saved-ships.js       # localStorage CRUD, export/import
+│       │   ├── dropdowns.js         # Dropdown open/close/reposition
+│       │   └── tracking-min.js      # Analytics
 │       └── images/      # Blueprints, parts, technology assets
 ├── sim/                 # Simulation engine
 │   ├── eclipse_sd_sim.py        # Core battle simulation (Ship, Battle_sim)
@@ -44,6 +53,11 @@ Uses the **application factory pattern** (`create_app()`). Routes:
 | `/`, `/index` | GET/POST | Main page renderer |
 | `/api/ship_parts` | GET | JSON: all ship parts with stats and PNG filenames |
 | `/api/ship_types` | GET | JSON: 16 ship types with slots, initiative, energy, default parts |
+| `/api/ship_types/<name>` | GET | JSON: detailed ship type info (part types, slot labels, OCR) |
+| `/api/ship_type_mapping/<name>` | GET | JSON: detected slot index -> static slot index mapping |
+| `/api/ship_type_grid/<name>` | GET | JSON: hardcoded slot pixel positions for overlay drawing |
+| `/api/initial_stats/<name>` | GET | JSON: computed default stats for a ship type |
+| `/api/validate_part_placement` | POST | JSON: validates where a part can be placed; returns invalid slots + reasons |
 
 ### `sim/eclipse_sd_sim.py` -- Simulation Engine
 
@@ -66,23 +80,123 @@ Uses the **application factory pattern** (`create_app()`). Routes:
 - `ship_parts` (dict) -- Maps each part to stats: type, damage, energy, initiative, armor, targeting, shielding, times_fired
 - `ship_part_png` (dict) -- Maps parts to their PNG filenames for the frontend
 
-### `flaskr/static/scripts/eclipse-sd-sim.js` -- Frontend
+### Frontend Modules (`flaskr/static/scripts/`)
 
-Two-layer HTML5 canvas approach for the ship designer:
-1. `shipBlueprintCanvas` -- renders the ship blueprint image
-2. `overlayCanvas` -- interactive layer for slot borders and placed parts
+The frontend uses **native ES modules** (no build step). Entry point is `main.js` loaded via `<script type="module">` in `index.html`. All event binding uses `data-*` attributes -- no inline `onclick` handlers.
 
-Key flows:
-- `detectBlueprintSlots()` -- pixel analysis of blueprint images to find draggable slot regions
-- Drag-and-drop and click-to-place for installing parts
-- `calculateShipStats()` -- aggregates stats from placed parts and updates UI
-- Fetches part/type data from Flask API endpoints
+**Module dependency graph** (arrows = imports from):
+```
+state.js (no deps)          feedback.js (no deps)       dropdowns.js (no deps)
+    │                            │                           │
+    ▼                            │                           │
+canvas-overlay.js ──────────────┤                           │
+    │                            │                           │
+    ▼                            │                           │
+stats.js ───────────────────────┤                           │
+    │                            │                           │
+    ▼                            │                           │
+validation.js ──────────────────┤                           │
+    │                            │                           │
+    ▼                            │                           │
+interaction.js ─────────────────┤                           │
+    │                            │                           │
+    ▼                            │                           │
+handlers.js ────────────────────┘                           │
+    │                                                       │
+    ▼                                                       │
+saved-ships.js ── dynamic import ───────────────────────────┘
+    │
+    ▼
+main.js (imports all setup functions)
+```
+
+#### `main.js` -- Entry Point
+
+- Imports setup functions from all modules
+- `DOMContentLoaded`: calls `setupOverlayHandlers()`, `setupDropdownHandlers()`, `setupDataAttributeHandlers()`, `updateSavedShipsMenu()`
+- `setupDataAttributeHandlers()`: wires `data-*` attribute elements to handler functions:
+  - `.blueprint-thumb` click -> `selectBlueprint(data-blueprint)`
+  - `.part-image` click -> `addPartToShip(data-part)`
+  - `.part-image` dragstart -> `onDragStart(event, data-part)`
+  - `[data-view]` click -> `showPrimaryDiv(data-view)`
+  - `[data-action="save-ship"]` click -> `saveCurrentShip()`
+  - `[data-action="export-ship"]` click -> `exportCurrentShip()`
+  - `#importShipFile` change -> `importShipFromEvent(event)`
+
+#### `state.js` -- Central State
+
+- Exports `AppState` object: single source of truth for all frontend state
+- Properties: `blueprintSlotBoxes`, `selectedPartName`, `hoveredSlotIndex`, `overlayImagesLoaded`, `currentBlueprintName`, `invalidSlotsForSelectedPart`, `lastValidationFeedback`, `shipPartsData`, `shipTypesData`, `currentShipStats`, `currentShipTypeInfo`, `currentSlotMapping`
+- Exports constants: `WHITE_THRESHOLD`, `SAVED_SHIPS_KEY`
+
+#### `feedback.js` -- Toast Notifications
+
+- `showPlacementFeedback(message)` -- shows a brief red toast above the canvas; auto-fades after 3 seconds
+
+#### `canvas-overlay.js` -- Canvas Drawing
+
+- `drawOverlay()` -- renders slot borders, part images, invalid markers, and labels on the overlay canvas
+- `drawPartImage()` -- draws a part icon in a slot; lazy-loads part images
+- `drawSlotLabelText()` -- draws part type label on each slot
+- `updateSlotLabels()` -- populates slot labels from ship type info
+- `loadGridSlots()` -- fetches hardcoded slot positions from `/api/ship_type_grid/<name>`
+- Bounding box detection functions (`verifyVerticalEdge`, `verifyHorizontalEdge`, `deduplicateSlots`) -- legacy pixel analysis, largely unused now
+
+#### `stats.js` -- Ship Statistics
+
+- `loadShipData()` -- fetches `/api/ship_parts` and `/api/ship_types`
+- `loadShipTypeInfo()` -- fetches type info, slot mapping, and initial stats for a blueprint
+- `calculateShipStats()` -- aggregates stats from placed parts (shielding, energy, initiative, armor, targeting, HP)
+- `updateStatsDisplay()` -- updates `#shipStatsPanel` DOM elements
+- `updateInstalledPartsList()` -- updates `#installedPartsList` with current parts
+- `updateShipStats()` -- orchestrates recalculation + display update
+
+#### `validation.js` -- Backend Validation
+
+- `buildSlotMapping()` -- maps detected frontend slot indices to backend static slot indices
+- `validatePartPlacement()` -- POSTs to `/api/validate_part_placement`; updates slot invalid states and redraws overlay
+
+#### `interaction.js` -- Core Interaction
+
+- `getSlotAtPosition()` -- hit detection: returns slot index at canvas coordinates
+- `placePart()` -- places a part in a slot with sync validation; updates overlay and stats
+- `removePart()` -- removes a part from a slot; updates overlay and stats
+- `onDragStart()` -- sets drag data and triggers validation for dragged part
+- `addPartToShip()` -- selects a part for click-to-place; highlights part image; triggers validation
+- `showPrimaryDiv()` -- toggles between Ship Designer and Battle Simulator views
+- `selectBlueprint()` -- loads a blueprint image, sets up canvases, loads grid slots and ship data
+
+#### `handlers.js` -- Canvas Event Listeners
+
+- `setupOverlayHandlers()` -- attaches dragover/drop/click/contextmenu/mousemove/mouseleave to `#overlayCanvas`
+- Handles coordinate scaling between display size and internal canvas dimensions
+
+#### `saved-ships.js` -- Persistence
+
+- `saveCurrentShip()` / `loadSavedShip()` -- localStorage CRUD with serialization
+- `renameSavedShip()` / `deleteSavedShip()` -- mutation operations
+- `exportCurrentShip()` -- downloads ship as JSON file
+- `importShipFromEvent()` -- reads JSON file, adds to saved ships
+- `updateSavedShipsMenu()` -- renders saved ships list in dropdown
+- `serializeCurrentSlots()` -- converts slot state to serializable format
+
+#### `dropdowns.js` -- Dropdown Management
+
+- `openDropdown()` / `closeDropdown()` / `closeAllDropdowns()` -- dropdown lifecycle
+- `repositionDropdownContent()` -- adjusts position on scroll/resize
+- `setupDropdownHandlers()` -- attaches click/scroll/resize listeners; manages blueprint dropdown overlay pointer-events toggle
 
 ### `flaskr/templates/index.html` + `static/style.css`
 
 Single-page application with embedded CSS. Two main sections toggled via `showPrimaryDiv()`:
 - Ship Designer (fully implemented)
 - Battle Simulator (placeholder, awaiting implementation)
+
+**data-* attribute convention:** All interactive elements use `data-*` attributes instead of inline `onclick` handlers. The `main.js` module wires these up programmatically:
+- `data-blueprint="Name"` on `.blueprint-thumb` images triggers blueprint selection
+- `data-part="PART_NAME"` on `.part-image` images triggers click-to-place and drag-and-drop
+- `data-view="shipDesigner|battleSimulator"` on links toggles primary views
+- `data-action="save-ship|export-ship"` on links triggers ship designer menu actions
 
 ---
 
@@ -111,9 +225,20 @@ Single-page application with embedded CSS. Two main sections toggled via `showPr
 
 ### Frontend
 
-- Canvas slot detection via pixel analysis is a fragile approach. When blueprints change format, `detectBlueprintSlots()` may break. Consider hardcoding slot positions per blueprint as a more robust alternative.
-- State management is implicit (stored in JS variables). As the app grows, consider introducing a clear state object.
+- Canvas slot detection via pixel analysis is a fragile approach. When blueprints change format, `detectBlueprintSlots()` may break. Slot positions are now hardcoded per blueprint (served via `/api/ship_type_grid/<name>`).
+- State is centralized in the `AppState` object exported from `state.js`. All modules import from this single source of truth -- do not introduce new global variables.
+- ES modules use relative imports (e.g., `import { ... } from './state.js'`). Flask serves these as static files; no build step needed.
+- All event binding uses `data-*` attributes wired in `main.js`. Never add inline `onclick` handlers to `index.html`.
+- Avoid circular dependencies between modules. If a circular dependency arises, extract the shared function to a separate module (e.g., `feedback.js`).
 - The Battle Simulator frontend section is still a placeholder in `index.html`.
+
+**Adding new frontend functionality:**
+1. Determine which module the new code belongs to based on the dependency graph above
+2. Add new exports to that module
+3. If the new code needs to respond to DOM events, either:
+   - Add a `data-*` attribute to `index.html` and wire it in `main.js`'s `setupDataAttributeHandlers()`
+   - Or create a new `setup*()` function and call it from `main.js` on `DOMContentLoaded`
+4. If the new code needs state, add properties to `AppState` in `state.js`
 
 ### Testing
 
